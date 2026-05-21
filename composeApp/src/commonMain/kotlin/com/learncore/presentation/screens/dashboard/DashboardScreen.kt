@@ -18,7 +18,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,7 +29,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -36,14 +37,28 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.learncore.domain.model.EisenhowerQuadrant
 import com.learncore.domain.model.Task
 import com.learncore.presentation.components.LoadingIndicator
 import com.learncore.presentation.components.QuadrantDot
-import com.learncore.presentation.components.StatCard
 import com.learncore.presentation.components.color
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
+
+// ── Greeting helper ──────────────────────────────────────────────────────────
+private fun greetingText(): String {
+    val hour = Clock.System.now()
+        .toLocalDateTime(TimeZone.currentSystemDefault()).hour
+    return when {
+        hour < 12 -> "Good Morning"
+        hour < 18 -> "Good Afternoon"
+        else       -> "Good Evening"
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -56,32 +71,16 @@ fun DashboardScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "LearnCore",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Focus. Prioritize. Learn Smarter.",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            )
-        },
         floatingActionButton = {
             ExtendedFloatingActionButton(
                 onClick = onNavigateToAddTask,
                 icon = { Icon(Icons.Outlined.Add, contentDescription = null) },
                 text = { Text("New Task") }
             )
-        }
+        },
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
+
         if (uiState.isLoading) {
             LoadingIndicator(modifier = Modifier.padding(padding))
             return@Scaffold
@@ -92,93 +91,335 @@ fun DashboardScreen(
                 .fillMaxSize()
                 .padding(padding),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                horizontal = 16.dp,
-                vertical = 12.dp
+                bottom = 96.dp
             ),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(0.dp)
         ) {
-            // Stats row
+
+            // ── Header ──────────────────────────────────────────────────────
             item {
+                DashboardHeader(userName = uiState.userName, photoUri = uiState.userPhotoUri)
+            }
+
+            // ── Greeting + subtitle ─────────────────────────────────────────
+            item {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                        .padding(top = 8.dp, bottom = 4.dp)
+                ) {
+                    Text(
+                        text = "${greetingText()}, ${uiState.userName.trim().split(" ").firstOrNull()?.ifBlank { null } ?: "Halo"}.",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = "Hari ini adalah kesempatan baru untuk menjadi lebih baik !",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // ── Stat cards row ──────────────────────────────────────────────
+            item {
+                Spacer(Modifier.height(16.dp))
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    StatCard(
-                        label = "Tasks Done",
+                    // Tasks Done
+                    StatCardFocus(
+                        label = "TASKS DONE",
                         value = "${uiState.stats.completedTasks}",
-                        accent = MaterialTheme.colorScheme.primary,
+                        subValue = "/${uiState.stats.totalTasks}",
+                        icon = Icons.Outlined.CheckCircle,
+                        accentColor = MaterialTheme.colorScheme.tertiary,
                         modifier = Modifier.weight(1f)
                     )
-                    StatCard(
-                        label = "Focus (min)",
-                        value = "${uiState.stats.totalFocusMinutes}",
-                        accent = MaterialTheme.colorScheme.tertiary,
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatCard(
-                        label = "Sessions",
-                        value = "${uiState.stats.pomodoroSessions}",
-                        accent = MaterialTheme.colorScheme.secondary,
+                    // Focus Time
+                    StatCardFocus(
+                        label = "FOCUS TIME",
+                        value = "%.1f".format(uiState.stats.totalFocusMinutes / 60f),
+                        subValue = " hrs",
+                        icon = Icons.Outlined.Timer,
+                        accentColor = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.weight(1f)
                     )
                 }
             }
 
-            // Eisenhower Matrix
+            // ── Productivity Score ──────────────────────────────────────────
             item {
+                Spacer(Modifier.height(12.dp))
+                ProductivityScoreCard(
+                    completedTasks = uiState.stats.completedTasks,
+                    totalTasks = uiState.stats.totalTasks,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                )
+            }
+
+            // ── Eisenhower Matrix ───────────────────────────────────────────
+            item {
+                Spacer(Modifier.height(12.dp))
                 EisenhowerMatrixCard(
                     quadrantCounts = uiState.quadrantCounts,
                     tasksByQuadrant = EisenhowerQuadrant.entries.associateWith { q ->
                         uiState.tasks.filter { it.quadrant == q && !it.isCompleted }
                     },
-                    onQuadrantClick = { quadrant -> onNavigateToTaskList(quadrant.name) }
+                    onQuadrantClick = { quadrant -> onNavigateToTaskList(quadrant.name) },
+                    onViewAll = { onNavigateToTaskList(null) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
                 )
             }
 
-            // Pomodoro shortcut card
+            // ── Pomodoro shortcut ───────────────────────────────────────────
             item {
-                PomodoroShortcutCard(onClick = onNavigateToPomodoro)
+                Spacer(Modifier.height(12.dp))
+                PomodoroShortcutCard(
+                    onClick = onNavigateToPomodoro,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp)
+                )
             }
+        }
+    }
+}
 
-            // Active tasks preview
-            if (uiState.tasks.any { !it.isCompleted }) {
-                item {
+// ── Dashboard Header ─────────────────────────────────────────────────────────
+
+@Composable
+private fun DashboardHeader(userName: String = "", photoUri: String = "") {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 20.dp, vertical = 16.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        // Avatar: show actual profile photo if available, else fallback initial
+        Box(
+            modifier = Modifier
+                .size(40.dp)
+                .clip(CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            if (photoUri.isNotBlank()) {
+                com.learncore.presentation.screens.profile.ProfileAvatarDisplay(
+                    photoUri = photoUri,
+                    userName = userName
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primaryContainer),
+                    contentAlignment = Alignment.Center
+                ) {
                     Text(
-                        text = "Active Tasks",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        text = (userName.firstOrNull()?.uppercaseChar() ?: 'U').toString(),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
                 }
-                item {
-                    ActiveTasksPreview(
-                        tasks = uiState.tasks.filter { !it.isCompleted }.take(4),
-                        onTaskClick = { /* navigate to task list */ onNavigateToTaskList(null) }
-                    )
+            }
+        }
+
+        Spacer(Modifier.width(10.dp))
+
+        Text(
+            text = "LearnCore",
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+// ── Stat Card (FocusFlow style) ───────────────────────────────────────────────
+
+@Composable
+private fun StatCardFocus(
+    label: String,
+    value: String,
+    subValue: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    accentColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(0.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp, MaterialTheme.colorScheme.outlineVariant
+        )
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = accentColor,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.5.sp
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            Row(verticalAlignment = Alignment.Bottom) {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    text = subValue,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 3.dp, start = 1.dp)
+                )
+            }
+        }
+    }
+}
+
+// ── Productivity Score Card ───────────────────────────────────────────────────
+
+@Composable
+private fun ProductivityScoreCard(
+    completedTasks: Int,
+    totalTasks: Int,
+    modifier: Modifier = Modifier
+) {
+    val completionRate = if (totalTasks == 0) 0f else completedTasks.toFloat() / totalTasks
+    val percentage = (completionRate * 100).toInt()
+
+    // Delta: selisih antara tasks selesai vs sisa. Positif = lebih banyak selesai.
+    // Kalkulasi: (completedTasks - pendingTasks) / totalTasks * 100
+    val pendingTasks = totalTasks - completedTasks
+    val delta = if (totalTasks == 0) 0
+    else ((completedTasks - pendingTasks).toFloat() / totalTasks * 100).toInt()
+    val isPositive = delta >= 0
+
+    val chipColor = if (isPositive) MaterialTheme.colorScheme.tertiaryContainer
+    else MaterialTheme.colorScheme.errorContainer
+    val chipTextColor = if (isPositive) MaterialTheme.colorScheme.tertiary
+    else MaterialTheme.colorScheme.error
+    val deltaLabel = if (isPositive) "+$delta% ahead of pending"
+    else "$delta% behind pending"
+
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(0.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            1.dp, MaterialTheme.colorScheme.outlineVariant
+        )
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.TrendingUp,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(14.dp)
+                )
+                Text(
+                    text = "PRODUCTIVITY SCORE",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.5.sp
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = "$percentage%",
+                    style = MaterialTheme.typography.displaySmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                if (totalTasks > 0) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(chipColor)
+                            .padding(horizontal = 10.dp, vertical = 5.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.TrendingUp,
+                            contentDescription = null,
+                            tint = chipTextColor,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Text(
+                            text = deltaLabel,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = chipTextColor,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
                 }
             }
         }
     }
 }
 
+// ── Eisenhower Matrix Card ────────────────────────────────────────────────────
+
 @Composable
 private fun EisenhowerMatrixCard(
     quadrantCounts: Map<EisenhowerQuadrant, Int>,
     tasksByQuadrant: Map<EisenhowerQuadrant, List<Task>>,
-    onQuadrantClick: (EisenhowerQuadrant) -> Unit
+    onQuadrantClick: (EisenhowerQuadrant) -> Unit,
+    onViewAll: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     Card(
+        modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(0.dp),
         border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            MaterialTheme.colorScheme.outlineVariant
+            1.dp, MaterialTheme.colorScheme.outlineVariant
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
+            // Title row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -187,123 +428,68 @@ private fun EisenhowerMatrixCard(
                 Text(
                     text = "Eisenhower Matrix",
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "Tap to view",
+                    text = "VIEW ALL",
                     style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.clickable { onViewAll() }
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
+            Spacer(Modifier.height(12.dp))
 
-            // Matrix axis labels + grid
-            Row(modifier = Modifier.fillMaxWidth()) {
-                // Left axis label spacer aligned with row labels below
-                Spacer(modifier = Modifier.width(52.dp))
-                // Column labels: URGENT / NOT URGENT
-                Row(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "URGENT",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = "NOT URGENT",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(6.dp))
-
-            // Row 1: IMPORTANT
+            // Top row: Do First + Schedule
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(0.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                // Row label
-                Text(
-                    text = "IMP.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier
-                        .width(52.dp)
-                        .padding(end = 4.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.End
+                QuadrantCell(
+                    quadrant = EisenhowerQuadrant.DO_FIRST,
+                    count = quadrantCounts[EisenhowerQuadrant.DO_FIRST] ?: 0,
+                    tasks = tasksByQuadrant[EisenhowerQuadrant.DO_FIRST] ?: emptyList(),
+                    onClick = { onQuadrantClick(EisenhowerQuadrant.DO_FIRST) },
+                    modifier = Modifier.weight(1f)
                 )
-                Row(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    QuadrantCell(
-                        quadrant = EisenhowerQuadrant.DO_FIRST,
-                        count = quadrantCounts[EisenhowerQuadrant.DO_FIRST] ?: 0,
-                        tasks = tasksByQuadrant[EisenhowerQuadrant.DO_FIRST] ?: emptyList(),
-                        onClick = { onQuadrantClick(EisenhowerQuadrant.DO_FIRST) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuadrantCell(
-                        quadrant = EisenhowerQuadrant.SCHEDULE,
-                        count = quadrantCounts[EisenhowerQuadrant.SCHEDULE] ?: 0,
-                        tasks = tasksByQuadrant[EisenhowerQuadrant.SCHEDULE] ?: emptyList(),
-                        onClick = { onQuadrantClick(EisenhowerQuadrant.SCHEDULE) },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                QuadrantCell(
+                    quadrant = EisenhowerQuadrant.SCHEDULE,
+                    count = quadrantCounts[EisenhowerQuadrant.SCHEDULE] ?: 0,
+                    tasks = tasksByQuadrant[EisenhowerQuadrant.SCHEDULE] ?: emptyList(),
+                    onClick = { onQuadrantClick(EisenhowerQuadrant.SCHEDULE) },
+                    modifier = Modifier.weight(1f)
+                )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(10.dp))
 
-            // Row 2: NOT IMPORTANT
+            // Bottom row: Delegate + Eliminate
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(0.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                Text(
-                    text = "NOT IMP.",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier
-                        .width(52.dp)
-                        .padding(end = 4.dp),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.End
+                QuadrantCell(
+                    quadrant = EisenhowerQuadrant.DELEGATE,
+                    count = quadrantCounts[EisenhowerQuadrant.DELEGATE] ?: 0,
+                    tasks = tasksByQuadrant[EisenhowerQuadrant.DELEGATE] ?: emptyList(),
+                    onClick = { onQuadrantClick(EisenhowerQuadrant.DELEGATE) },
+                    modifier = Modifier.weight(1f)
                 )
-                Row(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    QuadrantCell(
-                        quadrant = EisenhowerQuadrant.DELEGATE,
-                        count = quadrantCounts[EisenhowerQuadrant.DELEGATE] ?: 0,
-                        tasks = tasksByQuadrant[EisenhowerQuadrant.DELEGATE] ?: emptyList(),
-                        onClick = { onQuadrantClick(EisenhowerQuadrant.DELEGATE) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuadrantCell(
-                        quadrant = EisenhowerQuadrant.ELIMINATE,
-                        count = quadrantCounts[EisenhowerQuadrant.ELIMINATE] ?: 0,
-                        tasks = tasksByQuadrant[EisenhowerQuadrant.ELIMINATE] ?: emptyList(),
-                        onClick = { onQuadrantClick(EisenhowerQuadrant.ELIMINATE) },
-                        modifier = Modifier.weight(1f)
-                    )
-                }
+                QuadrantCell(
+                    quadrant = EisenhowerQuadrant.ELIMINATE,
+                    count = quadrantCounts[EisenhowerQuadrant.ELIMINATE] ?: 0,
+                    tasks = tasksByQuadrant[EisenhowerQuadrant.ELIMINATE] ?: emptyList(),
+                    onClick = { onQuadrantClick(EisenhowerQuadrant.ELIMINATE) },
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }
 }
+
+// ── Quadrant Cell ─────────────────────────────────────────────────────────────
 
 @Composable
 private fun QuadrantCell(
@@ -317,27 +503,31 @@ private fun QuadrantCell(
 
     Card(
         modifier = modifier.clickable(onClick = onClick),
-        shape = RoundedCornerShape(10.dp),
+        shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = accentColor.copy(alpha = 0.08f)
+            containerColor = MaterialTheme.colorScheme.surface
         ),
-        elevation = CardDefaults.cardElevation(0.dp)
+        elevation = CardDefaults.cardElevation(0.dp),
+        border = androidx.compose.foundation.BorderStroke(
+            width = 1.5.dp,
+            color = accentColor.copy(alpha = 0.35f)
+        )
     ) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(10.dp),
+                .padding(12.dp),
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // Top: action label + count badge
+            // Label + count badge
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = quadrant.action,
-                    style = MaterialTheme.typography.labelSmall,
+                    style = MaterialTheme.typography.labelMedium,
                     color = accentColor,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
@@ -360,60 +550,45 @@ private fun QuadrantCell(
                 }
             }
 
-            // Description
-            Text(
-                text = quadrant.description,
-                style = MaterialTheme.typography.labelSmall,
-                color = accentColor.copy(alpha = 0.7f),
-                fontSize = androidx.compose.ui.unit.TextUnit(
-                    9f,
-                    androidx.compose.ui.unit.TextUnitType.Sp
-                )
-            )
-
             // Task dots
             if (tasks.isNotEmpty()) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(3.dp),
-                    modifier = Modifier.padding(top = 2.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     tasks.take(5).forEach { _ ->
-                        QuadrantDot(quadrant = quadrant, size = 6.dp)
+                        QuadrantDot(quadrant = quadrant, size = 8.dp)
                     }
                     if (tasks.size > 5) {
                         Text(
                             text = "+${tasks.size - 5}",
                             style = MaterialTheme.typography.labelSmall,
                             color = accentColor,
-                            fontSize = androidx.compose.ui.unit.TextUnit(
-                                8f,
-                                androidx.compose.ui.unit.TextUnitType.Sp
-                            )
+                            fontSize = 9.sp
                         )
                     }
                 }
             } else {
-                Text(
-                    text = "No tasks",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = androidx.compose.ui.unit.TextUnit(
-                        9f,
-                        androidx.compose.ui.unit.TextUnitType.Sp
-                    )
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(accentColor.copy(alpha = 0.25f))
                 )
             }
         }
     }
 }
 
+// ── Pomodoro Shortcut Card ────────────────────────────────────────────────────
+
 @Composable
-private fun PomodoroShortcutCard(onClick: () -> Unit) {
+private fun PomodoroShortcutCard(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         ),
@@ -425,13 +600,21 @@ private fun PomodoroShortcutCard(onClick: () -> Unit) {
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Outlined.Timer,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(12.dp))
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.primary),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Timer,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
+            Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = "Start Focus Session",
@@ -443,44 +626,6 @@ private fun PomodoroShortcutCard(onClick: () -> Unit) {
                     text = "Pomodoro Timer — stay in the zone",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.7f)
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ActiveTasksPreview(
-    tasks: List<Task>,
-    onTaskClick: () -> Unit
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.clickable(onClick = onTaskClick)
-    ) {
-        tasks.forEach { task ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                QuadrantDot(quadrant = task.quadrant, size = 8.dp)
-                Text(
-                    text = task.title,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 1,
-                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
-                Text(
-                    text = task.quadrant.action,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = task.quadrant.color()
                 )
             }
         }

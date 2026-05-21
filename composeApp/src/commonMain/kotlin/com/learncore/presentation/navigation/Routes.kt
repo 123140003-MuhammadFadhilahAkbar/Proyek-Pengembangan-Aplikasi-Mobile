@@ -23,6 +23,12 @@ sealed interface Route {
     data object Profile : Route
 
     @Serializable
+    data object AccountEdit : Route
+
+    @Serializable
+    data object HelpSupport : Route
+
+    @Serializable
     data object AIAssistant : Route
 }
 
@@ -33,6 +39,8 @@ interface NavigationActions {
     fun navigateToAddEditTask(taskId: Long? = null, defaultQuadrant: String? = null)
     fun navigateToPomodoro()
     fun navigateToProfile()
+    fun navigateToAccountEdit()
+    fun navigateToHelpSupport()
     fun navigateToAIAssistant()
     fun navigateBack()
 }

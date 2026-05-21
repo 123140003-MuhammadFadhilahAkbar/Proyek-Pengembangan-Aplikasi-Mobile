@@ -29,6 +29,8 @@ import androidx.navigation.toRoute
 import com.learncore.presentation.screens.ai.AIAssistantScreen
 import com.learncore.presentation.screens.dashboard.DashboardScreen
 import com.learncore.presentation.screens.pomodoro.PomodoroScreen
+import com.learncore.presentation.screens.profile.AccountEditScreen
+import com.learncore.presentation.screens.profile.HelpSupportScreen
 import com.learncore.presentation.screens.profile.ProfileScreen
 import com.learncore.presentation.screens.tasks.AddEditTaskScreen
 import com.learncore.presentation.screens.tasks.TaskDetailScreen
@@ -53,10 +55,12 @@ fun AppNavHost(
 
     val showBottomBar = currentRoute?.let { route ->
         route.contains("Dashboard") ||
-            route.contains("TaskList") ||
-            route.contains("Pomodoro") ||
-            route.contains("AIAssistant") ||
-            route.contains("Profile")
+                route.contains("TaskList") ||
+                route.contains("Pomodoro") ||
+                route.contains("AIAssistant") ||
+                route.contains("Profile") &&
+                !route.contains("AccountEdit") &&
+                !route.contains("HelpSupport")
     } ?: false
 
     Scaffold(
@@ -85,10 +89,10 @@ fun AppNavHost(
                 .padding(innerPadding),
             enterTransition = {
                 fadeIn(animationSpec = tween(220)) +
-                    slideIntoContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Left,
-                        tween(220)
-                    )
+                        slideIntoContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Left,
+                            tween(220)
+                        )
             },
             exitTransition = {
                 fadeOut(animationSpec = tween(180))
@@ -98,10 +102,10 @@ fun AppNavHost(
             },
             popExitTransition = {
                 fadeOut(animationSpec = tween(180)) +
-                    slideOutOfContainer(
-                        AnimatedContentTransitionScope.SlideDirection.Right,
-                        tween(220)
-                    )
+                        slideOutOfContainer(
+                            AnimatedContentTransitionScope.SlideDirection.Right,
+                            tween(220)
+                        )
             }
         ) {
             composable<Route.Dashboard> {
@@ -144,7 +148,22 @@ fun AppNavHost(
             }
 
             composable<Route.Profile> {
-                ProfileScreen()
+                ProfileScreen(
+                    onNavigateToAccountEdit = { actions.navigateToAccountEdit() },
+                    onNavigateToHelpSupport = { actions.navigateToHelpSupport() }
+                )
+            }
+
+            composable<Route.AccountEdit> {
+                AccountEditScreen(
+                    onNavigateBack = { actions.navigateBack() }
+                )
+            }
+
+            composable<Route.HelpSupport> {
+                HelpSupportScreen(
+                    onNavigateBack = { actions.navigateBack() }
+                )
             }
 
             composable<Route.AIAssistant> {
@@ -228,6 +247,14 @@ private fun createNavigationActions(navController: NavHostController): Navigatio
             navController.navigate(Route.Profile) {
                 launchSingleTop = true
             }
+        }
+
+        override fun navigateToAccountEdit() {
+            navController.navigate(Route.AccountEdit)
+        }
+
+        override fun navigateToHelpSupport() {
+            navController.navigate(Route.HelpSupport)
         }
 
         override fun navigateToAIAssistant() {
