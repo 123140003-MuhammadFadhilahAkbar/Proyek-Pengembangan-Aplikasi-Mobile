@@ -24,6 +24,7 @@ import com.learncore.presentation.screens.ai.AIAssistantViewModel
 import com.learncore.presentation.screens.dashboard.DashboardViewModel
 import com.learncore.presentation.screens.pomodoro.PomodoroViewModel
 import com.learncore.presentation.screens.profile.ProfileViewModel
+import com.learncore.presentation.screens.tasks.AddEditTaskViewModel
 import com.learncore.presentation.screens.tasks.TaskDetailViewModel
 import com.learncore.presentation.screens.tasks.TaskListViewModel
 import org.koin.core.context.startKoin
@@ -73,6 +74,7 @@ val viewModelModule = module {
     viewModelOf(::DashboardViewModel)
     viewModelOf(::TaskListViewModel)
     viewModelOf(::TaskDetailViewModel)
+    viewModelOf(::AddEditTaskViewModel)
     viewModelOf(::PomodoroViewModel)
     viewModelOf(::ProfileViewModel)
     viewModelOf(::AIAssistantViewModel)

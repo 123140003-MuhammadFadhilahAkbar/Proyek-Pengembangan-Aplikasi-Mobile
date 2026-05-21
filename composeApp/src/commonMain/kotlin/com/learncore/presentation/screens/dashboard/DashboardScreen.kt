@@ -1,16 +1,12 @@
 package com.learncore.presentation.screens.dashboard
 
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -194,47 +190,66 @@ private fun EisenhowerMatrixCard(
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "Tap to filter",
+                    text = "Tap to view",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Column labels
+            // Matrix axis labels + grid
             Row(modifier = Modifier.fillMaxWidth()) {
-                Spacer(modifier = Modifier.width(4.dp))
-                Text(
-                    text = "URGENT",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
-                Text(
-                    text = "NOT URGENT",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                )
+                // Left axis label spacer aligned with row labels below
+                Spacer(modifier = Modifier.width(52.dp))
+                // Column labels: URGENT / NOT URGENT
+                Row(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "URGENT",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Text(
+                        text = "NOT URGENT",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
 
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Row 1: DO_FIRST, SCHEDULE (Important row)
+            // Row 1: IMPORTANT
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(0.dp)
+            ) {
+                // Row label
+                Text(
+                    text = "IMP.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .width(52.dp)
+                        .padding(end = 4.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End
+                )
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.weight(1f),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     QuadrantCell(
                         quadrant = EisenhowerQuadrant.DO_FIRST,
                         count = quadrantCounts[EisenhowerQuadrant.DO_FIRST] ?: 0,
                         tasks = tasksByQuadrant[EisenhowerQuadrant.DO_FIRST] ?: emptyList(),
-                        rowLabel = "IMPORTANT",
-                        showRowLabel = true,
                         onClick = { onQuadrantClick(EisenhowerQuadrant.DO_FIRST) },
                         modifier = Modifier.weight(1f)
                     )
@@ -242,23 +257,38 @@ private fun EisenhowerMatrixCard(
                         quadrant = EisenhowerQuadrant.SCHEDULE,
                         count = quadrantCounts[EisenhowerQuadrant.SCHEDULE] ?: 0,
                         tasks = tasksByQuadrant[EisenhowerQuadrant.SCHEDULE] ?: emptyList(),
-                        showRowLabel = false,
                         onClick = { onQuadrantClick(EisenhowerQuadrant.SCHEDULE) },
                         modifier = Modifier.weight(1f)
                     )
                 }
+            }
 
-                // Row 2: DELEGATE, ELIMINATE (Not Important row)
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Row 2: NOT IMPORTANT
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(0.dp)
+            ) {
+                Text(
+                    text = "NOT IMP.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier
+                        .width(52.dp)
+                        .padding(end = 4.dp),
+                    textAlign = androidx.compose.ui.text.style.TextAlign.End
+                )
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.weight(1f),
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     QuadrantCell(
                         quadrant = EisenhowerQuadrant.DELEGATE,
                         count = quadrantCounts[EisenhowerQuadrant.DELEGATE] ?: 0,
                         tasks = tasksByQuadrant[EisenhowerQuadrant.DELEGATE] ?: emptyList(),
-                        rowLabel = "NOT IMP.",
-                        showRowLabel = true,
                         onClick = { onQuadrantClick(EisenhowerQuadrant.DELEGATE) },
                         modifier = Modifier.weight(1f)
                     )
@@ -266,7 +296,6 @@ private fun EisenhowerMatrixCard(
                         quadrant = EisenhowerQuadrant.ELIMINATE,
                         count = quadrantCounts[EisenhowerQuadrant.ELIMINATE] ?: 0,
                         tasks = tasksByQuadrant[EisenhowerQuadrant.ELIMINATE] ?: emptyList(),
-                        showRowLabel = false,
                         onClick = { onQuadrantClick(EisenhowerQuadrant.ELIMINATE) },
                         modifier = Modifier.weight(1f)
                     )
@@ -281,104 +310,98 @@ private fun QuadrantCell(
     quadrant: EisenhowerQuadrant,
     count: Int,
     tasks: List<Task>,
-    rowLabel: String = "",
-    showRowLabel: Boolean = false,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val accentColor = quadrant.color()
 
-    Box(modifier = modifier) {
-        if (showRowLabel) {
+    Card(
+        modifier = modifier.clickable(onClick = onClick),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = accentColor.copy(alpha = 0.08f)
+        ),
+        elevation = CardDefaults.cardElevation(0.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            // Top: action label + count badge
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Text(
+                    text = quadrant.action,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = accentColor,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f)
+                )
+                if (count > 0) {
+                    Box(
+                        modifier = Modifier
+                            .size(20.dp)
+                            .clip(CircleShape)
+                            .background(accentColor),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "$count",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+
+            // Description
             Text(
-                text = rowLabel,
+                text = quadrant.description,
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .padding(end = 4.dp),
+                color = accentColor.copy(alpha = 0.7f),
                 fontSize = androidx.compose.ui.unit.TextUnit(
-                    8f,
+                    9f,
                     androidx.compose.ui.unit.TextUnitType.Sp
                 )
             )
-        }
 
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1.2f)
-                .clickable(onClick = onClick),
-            shape = RoundedCornerShape(10.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = accentColor.copy(alpha = 0.08f)
-            ),
-            elevation = CardDefaults.cardElevation(0.dp)
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(12.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                // Top: action label + count badge
+            // Task dots
+            if (tasks.isNotEmpty()) {
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
+                    horizontalArrangement = Arrangement.spacedBy(3.dp),
+                    modifier = Modifier.padding(top = 2.dp)
                 ) {
-                    Text(
-                        text = quadrant.action,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = accentColor,
-                        fontWeight = FontWeight.Bold
-                    )
-                    if (count > 0) {
-                        Box(
-                            modifier = Modifier
-                                .size(20.dp)
-                                .clip(CircleShape)
-                                .background(accentColor),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = "$count",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
+                    tasks.take(5).forEach { _ ->
+                        QuadrantDot(quadrant = quadrant, size = 6.dp)
+                    }
+                    if (tasks.size > 5) {
+                        Text(
+                            text = "+${tasks.size - 5}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = accentColor,
+                            fontSize = androidx.compose.ui.unit.TextUnit(
+                                8f,
+                                androidx.compose.ui.unit.TextUnitType.Sp
                             )
-                        }
+                        )
                     }
                 }
-
-                // Bottom: dots representing tasks
-                if (tasks.isNotEmpty()) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        modifier = Modifier.padding(top = 4.dp)
-                    ) {
-                        tasks.take(5).forEach { _ ->
-                            QuadrantDot(quadrant = quadrant, size = 7.dp)
-                        }
-                        if (tasks.size > 5) {
-                            Text(
-                                text = "+${tasks.size - 5}",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = accentColor,
-                                fontSize = androidx.compose.ui.unit.TextUnit(
-                                    8f,
-                                    androidx.compose.ui.unit.TextUnitType.Sp
-                                )
-                            )
-                        }
-                    }
-                } else {
-                    Text(
-                        text = "No tasks",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+            } else {
+                Text(
+                    text = "No tasks",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = androidx.compose.ui.unit.TextUnit(
+                        9f,
+                        androidx.compose.ui.unit.TextUnitType.Sp
                     )
-                }
+                )
             }
         }
     }

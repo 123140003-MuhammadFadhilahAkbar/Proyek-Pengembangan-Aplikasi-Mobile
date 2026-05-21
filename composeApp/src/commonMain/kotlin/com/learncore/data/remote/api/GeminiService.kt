@@ -25,6 +25,11 @@ class GeminiService(private val client: HttpClient) {
         prompt: String,
         systemPrompt: String? = null
     ): Result<String> = runCatching {
+        val apiKey = ApiConfig.geminiApiKey
+        if (apiKey.isBlank()) {
+            throw Exception("API key Gemini belum dikonfigurasi. Tambahkan GEMINI_API_KEY di file local.properties.")
+        }
+
         val contents = mutableListOf<GeminiContent>()
 
         if (systemPrompt != null) {
@@ -59,12 +64,19 @@ class GeminiService(private val client: HttpClient) {
 
         val response: GeminiResponse = client.post("$BASE_URL/models/$MODEL:generateContent") {
             contentType(ContentType.Application.Json)
-            parameter("key", ApiConfig.geminiApiKey)
+            parameter("key", apiKey)
             setBody(request)
         }.body()
 
+        // Check for API-level error first
+        if (response.error != null) {
+            val code = response.error.code ?: 0
+            val msg = response.error.message ?: "Unknown API error"
+            throw Exception("Gemini API error ($code): $msg")
+        }
+
         response.candidates?.firstOrNull()
-            ?.content?.parts?.firstOrNull()?.text
+            ?.content?.parts?.firstOrNull()?.text?.takeIf { it.isNotBlank() }
             ?: throw Exception("Empty response from AI")
     }
 }
