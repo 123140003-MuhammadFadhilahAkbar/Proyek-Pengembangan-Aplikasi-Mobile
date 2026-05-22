@@ -8,6 +8,7 @@ import kotlinx.datetime.Instant
 fun TaskEntity.toDomain(): Task = Task(
     id = id,
     title = title,
+    category = category,
     description = description,
     quadrant = EisenhowerQuadrant.fromString(quadrant),
     isCompleted = is_completed != 0L,
@@ -20,6 +21,7 @@ fun List<TaskEntity>.toDomainList(): List<Task> = map { it.toDomain() }
 
 data class TaskEntityValues(
     val title: String,
+    val category: String,
     val description: String,
     val quadrant: String,
     val isCompleted: Long,
@@ -30,6 +32,7 @@ data class TaskEntityValues(
 
 fun Task.toEntityValues(): TaskEntityValues = TaskEntityValues(
     title = title,
+    category = category,
     description = description,
     quadrant = quadrant.name,
     isCompleted = if (isCompleted) 1L else 0L,

@@ -12,15 +12,24 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
+val DEFAULT_CATEGORIES = listOf("Kuliah", "Pekerjaan", "Lifestyle")
+
 data class AddEditTaskUiState(
     val title: String = "",
+    val category: String = "",
+    val customCategory: String = "",
+    val isCustomCategory: Boolean = false,
     val description: String = "",
     val quadrant: EisenhowerQuadrant = EisenhowerQuadrant.DO_FIRST,
     val isLoading: Boolean = false,
     val isSaved: Boolean = false,
     val error: String? = null,
     val isEditMode: Boolean = false
-)
+) {
+    /** Nilai kategori final yang akan disimpan */
+    val resolvedCategory: String
+        get() = if (isCustomCategory) customCategory.trim() else category
+}
 
 class AddEditTaskViewModel(
     private val saveTaskUseCase: SaveTaskUseCase,
@@ -37,8 +46,13 @@ class AddEditTaskViewModel(
         viewModelScope.launch {
             val task = getTaskByIdUseCase(taskId).first()
             if (task != null) {
+                val isCustom = task.category.isNotBlank() &&
+                        !DEFAULT_CATEGORIES.contains(task.category)
                 _uiState.value = _uiState.value.copy(
                     title = task.title,
+                    category = if (isCustom) "" else task.category,
+                    customCategory = if (isCustom) task.category else "",
+                    isCustomCategory = isCustom,
                     description = task.description,
                     quadrant = task.quadrant,
                     isEditMode = true
@@ -57,6 +71,27 @@ class AddEditTaskViewModel(
         _uiState.value = _uiState.value.copy(title = title, error = null)
     }
 
+    fun onCategorySelect(category: String) {
+        _uiState.value = _uiState.value.copy(
+            category = category,
+            isCustomCategory = false,
+            customCategory = "",
+            error = null
+        )
+    }
+
+    fun onCustomCategoryToggle() {
+        _uiState.value = _uiState.value.copy(
+            isCustomCategory = true,
+            category = "",
+            error = null
+        )
+    }
+
+    fun onCustomCategoryChange(value: String) {
+        _uiState.value = _uiState.value.copy(customCategory = value)
+    }
+
     fun onDescriptionChange(desc: String) {
         _uiState.value = _uiState.value.copy(description = desc)
     }
@@ -68,7 +103,7 @@ class AddEditTaskViewModel(
     fun saveTask() {
         val state = _uiState.value
         if (state.title.isBlank()) {
-            _uiState.value = state.copy(error = "Title cannot be empty")
+            _uiState.value = state.copy(error = "Judul tugas tidak boleh kosong")
             return
         }
 
@@ -77,6 +112,7 @@ class AddEditTaskViewModel(
             val task = Task(
                 id = editingTaskId ?: 0L,
                 title = state.title.trim(),
+                category = state.resolvedCategory,
                 description = state.description.trim(),
                 quadrant = state.quadrant
             )
@@ -84,7 +120,7 @@ class AddEditTaskViewModel(
                 .onSuccess { _uiState.value = _uiState.value.copy(isSaved = true, isLoading = false) }
                 .onFailure { e ->
                     _uiState.value = _uiState.value.copy(
-                        error = e.message ?: "Failed to save task",
+                        error = e.message ?: "Gagal menyimpan tugas",
                         isLoading = false
                     )
                 }

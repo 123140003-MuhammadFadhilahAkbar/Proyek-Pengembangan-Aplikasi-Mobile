@@ -6,6 +6,7 @@ import kotlinx.datetime.Instant
 data class Task(
     val id: Long = 0,
     val title: String,
+    val category: String = "",
     val description: String = "",
     val quadrant: EisenhowerQuadrant = EisenhowerQuadrant.DO_FIRST,
     val isCompleted: Boolean = false,

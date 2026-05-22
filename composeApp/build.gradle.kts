@@ -70,7 +70,6 @@ kotlin {
 
             implementation(libs.navigation.compose)
 
-            implementation("androidx.datastore:datastore-preferences:1.1.1")
         }
 
         commonTest.dependencies {
@@ -84,11 +83,13 @@ kotlin {
             implementation(libs.koin.android)
             implementation(libs.ktor.client.okhttp)
             implementation(libs.sqldelight.android.driver)
+            implementation("androidx.datastore:datastore-preferences:1.1.1")
         }
 
         iosMain.dependencies {
             implementation(libs.ktor.client.darwin)
             implementation(libs.sqldelight.native.driver)
+            implementation(libs.okio)
         }
     }
 }
@@ -139,6 +140,9 @@ sqldelight {
     databases {
         create("LearnCoreDatabase") {
             packageName.set("com.learncore.data.local")
+            schemaOutputDirectory.set(file("src/commonMain/sqldelight/migrations"))
+            migrationOutputFileFormat.set(".sqm")
+            verifyMigrations.set(false)
         }
     }
 }

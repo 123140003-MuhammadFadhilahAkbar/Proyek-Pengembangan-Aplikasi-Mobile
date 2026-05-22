@@ -1,7 +1,6 @@
 package com.learncore.presentation.components
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,7 +20,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
-import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -33,7 +31,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -47,10 +44,6 @@ import com.learncore.presentation.theme.QuadrantDelegate
 import com.learncore.presentation.theme.QuadrantDoFirst
 import com.learncore.presentation.theme.QuadrantEliminate
 import com.learncore.presentation.theme.QuadrantSchedule
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 
 // ==================== QUADRANT COLOR UTILS ====================
 
@@ -104,33 +97,6 @@ fun QuadrantBadge(
 
 // ==================== TASK CARD ====================
 
-/** Format an Instant deadline into a human-readable label. */
-private fun formatDeadline(deadline: Instant): String {
-    val tz = TimeZone.currentSystemDefault()
-    val now = Clock.System.now().toLocalDateTime(tz)
-    val dt = deadline.toLocalDateTime(tz)
-
-    val dayLabel = when {
-        dt.date == now.date -> "Today"
-        dt.date.toEpochDays() == now.date.toEpochDays() + 1 -> "Tomorrow"
-        dt.date.toEpochDays() == now.date.toEpochDays() - 1 -> "Yesterday"
-        else -> "${dt.date.dayOfMonth} ${
-            dt.date.month.name.lowercase().replaceFirstChar { it.uppercase() }.take(3)
-        }"
-    }
-
-    val hour = dt.hour
-    val minute = dt.minute
-    val amPm = if (hour < 12) "AM" else "PM"
-    val displayHour = when {
-        hour == 0 -> 12
-        hour > 12 -> hour - 12
-        else -> hour
-    }
-    val minuteStr = minute.toString().padStart(2, '0')
-    return "$dayLabel, $displayHour:$minuteStr $amPm"
-}
-
 @Composable
 fun TaskCard(
     task: Task,
@@ -140,7 +106,7 @@ fun TaskCard(
 ) {
     val quadrantColor = task.quadrant.color()
 
-    // Card background: abu-abu redup untuk completed, putih untuk aktif
+    // Card background: redup untuk completed
     val cardBackground by animateColorAsState(
         targetValue = if (task.isCompleted)
             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
@@ -187,19 +153,34 @@ fun TaskCard(
                 )
             }
 
-            // ── Baris 2: Checkbox + Judul ────────────────────────────────
+            // ── Baris 2: Judul + Checkbox (kanan) ───────────────────────
             Row(
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Tombol complete — selalu biru (primary) saat checked
+                Text(
+                    text = task.title,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
+                    color = if (task.isCompleted)
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    else
+                        MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Tombol complete biru, di sebelah KANAN
                 IconButton(
                     onClick = { onToggleComplete(task.id) },
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(32.dp)
                 ) {
                     val checkColor by animateColorAsState(
                         targetValue = if (task.isCompleted)
-                            MaterialTheme.colorScheme.primary      // biru
+                            MaterialTheme.colorScheme.primary   // biru
                         else
                             MaterialTheme.colorScheme.outline,
                         animationSpec = tween(200),
@@ -212,31 +193,18 @@ fun TaskCard(
                             Icons.Outlined.RadioButtonUnchecked,
                         contentDescription = if (task.isCompleted) "Tandai belum selesai" else "Tandai selesai",
                         tint = checkColor,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(22.dp)
                     )
                 }
-
-                Text(
-                    text = task.title,
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.SemiBold,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
-                    color = if (task.isCompleted)
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    else
-                        MaterialTheme.colorScheme.onSurface
-                )
             }
 
-            // ── Baris 3: Chip tipe kuadran + deadline / label selesai ────
+            // ── Baris 3: Chip kuadran + kategori / label selesai ────────
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (task.isCompleted) {
-                    // Label "Selesai" menggantikan semua chip
+                    // Label "Selesai"
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
@@ -251,7 +219,7 @@ fun TaskCard(
                         )
                     }
                 } else {
-                    // Chip tipe kuadran (Do First, Schedule, dll.)
+                    // Chip tipe kuadran
                     Row(
                         modifier = Modifier
                             .clip(RoundedCornerShape(4.dp))
@@ -269,32 +237,8 @@ fun TaskCard(
                         )
                     }
 
-                    // Chip deadline (jika ada)
-                    if (task.deadline != null) {
-                        Row(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(4.dp))
-                                .background(MaterialTheme.colorScheme.surfaceVariant)
-                                .padding(horizontal = 7.dp, vertical = 3.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.CalendarToday,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(11.dp)
-                            )
-                            Text(
-                                text = formatDeadline(task.deadline),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
-
-                    // Chip deskripsi/kategori (jika diisi)
-                    if (task.description.isNotBlank()) {
+                    // Chip kategori (jika diisi)
+                    if (task.category.isNotBlank()) {
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(4.dp))
@@ -302,7 +246,7 @@ fun TaskCard(
                                 .padding(horizontal = 7.dp, vertical = 3.dp)
                         ) {
                             Text(
-                                text = task.description,
+                                text = task.category,
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,

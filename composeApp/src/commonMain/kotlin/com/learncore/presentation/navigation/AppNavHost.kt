@@ -58,9 +58,9 @@ fun AppNavHost(
                 route.contains("TaskList") ||
                 route.contains("Pomodoro") ||
                 route.contains("AIAssistant") ||
-                route.contains("Profile") &&
+                (route.contains("Profile") &&
                 !route.contains("AccountEdit") &&
-                !route.contains("HelpSupport")
+                !route.contains("HelpSupport"))
     } ?: false
 
     Scaffold(

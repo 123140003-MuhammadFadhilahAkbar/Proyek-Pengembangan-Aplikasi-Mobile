@@ -1,7 +1,11 @@
 package com.learncore.presentation.screens.tasks
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -30,7 +34,9 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -65,13 +71,13 @@ fun AddEditTaskScreen(
             TopAppBar(
                 title = {
                     Text(
-                        text = if (uiState.isEditMode) "Edit Task" else "New Task",
+                        text = if (uiState.isEditMode) "Edit Tugas" else "Tugas Baru",
                         fontWeight = FontWeight.SemiBold
                     )
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.Outlined.ArrowBack, contentDescription = "Kembali")
                     }
                 }
             )
@@ -83,80 +89,116 @@ fun AddEditTaskScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
-            // Title
-            OutlinedTextField(
-                value = uiState.title,
-                onValueChange = viewModel::onTitleChange,
-                label = { Text("Task Title") },
-                placeholder = { Text("What needs to be done?") },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                isError = uiState.error != null && uiState.title.isBlank(),
-                shape = RoundedCornerShape(12.dp)
-            )
 
-            // Description
-            OutlinedTextField(
-                value = uiState.description,
-                onValueChange = viewModel::onDescriptionChange,
-                label = { Text("Description (optional)") },
-                placeholder = { Text("Add details...") },
-                modifier = Modifier.fillMaxWidth(),
-                minLines = 3,
-                maxLines = 5,
-                shape = RoundedCornerShape(12.dp)
-            )
-
-            // Quadrant selector
-            Text(
-                text = "Eisenhower Quadrant",
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurface,
-                fontWeight = FontWeight.Medium
-            )
-
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                // Row 1: DO_FIRST, SCHEDULE
-                Row(
+            // ── 1. Judul Tugas ──────────────────────────────────────────
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                SectionLabel("Judul Tugas")
+                OutlinedTextField(
+                    value = uiState.title,
+                    onValueChange = viewModel::onTitleChange,
+                    placeholder = { Text("Apa yang perlu dikerjakan?") },
                     modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = uiState.error != null && uiState.title.isBlank(),
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+
+            // ── 2. Kategori ─────────────────────────────────────────────
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                SectionLabel("Kategori")
+
+                // Chip preset
+                Row(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    QuadrantSelectorCard(
-                        quadrant = EisenhowerQuadrant.DO_FIRST,
-                        isSelected = uiState.quadrant == EisenhowerQuadrant.DO_FIRST,
-                        onClick = { viewModel.onQuadrantChange(EisenhowerQuadrant.DO_FIRST) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuadrantSelectorCard(
-                        quadrant = EisenhowerQuadrant.SCHEDULE,
-                        isSelected = uiState.quadrant == EisenhowerQuadrant.SCHEDULE,
-                        onClick = { viewModel.onQuadrantChange(EisenhowerQuadrant.SCHEDULE) },
-                        modifier = Modifier.weight(1f)
+                    DEFAULT_CATEGORIES.forEach { cat ->
+                        val isSelected = !uiState.isCustomCategory && uiState.category == cat
+                        CategoryChip(
+                            label = cat,
+                            isSelected = isSelected,
+                            onClick = { viewModel.onCategorySelect(cat) }
+                        )
+                    }
+                    // Chip "Lainnya"
+                    CategoryChip(
+                        label = "Lainnya...",
+                        isSelected = uiState.isCustomCategory,
+                        onClick = { viewModel.onCustomCategoryToggle() }
                     )
                 }
-                // Row 2: DELEGATE, ELIMINATE
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    QuadrantSelectorCard(
-                        quadrant = EisenhowerQuadrant.DELEGATE,
-                        isSelected = uiState.quadrant == EisenhowerQuadrant.DELEGATE,
-                        onClick = { viewModel.onQuadrantChange(EisenhowerQuadrant.DELEGATE) },
-                        modifier = Modifier.weight(1f)
-                    )
-                    QuadrantSelectorCard(
-                        quadrant = EisenhowerQuadrant.ELIMINATE,
-                        isSelected = uiState.quadrant == EisenhowerQuadrant.ELIMINATE,
-                        onClick = { viewModel.onQuadrantChange(EisenhowerQuadrant.ELIMINATE) },
-                        modifier = Modifier.weight(1f)
+
+                // Input custom jika "Lainnya" dipilih
+                if (uiState.isCustomCategory) {
+                    OutlinedTextField(
+                        value = uiState.customCategory,
+                        onValueChange = viewModel::onCustomCategoryChange,
+                        placeholder = { Text("Tulis kategori kustom...") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = RoundedCornerShape(12.dp)
                     )
                 }
             }
 
-            // Error message
+            // ── 3. Deskripsi / Detail ───────────────────────────────────
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                SectionLabel("Deskripsi (opsional)")
+                OutlinedTextField(
+                    value = uiState.description,
+                    onValueChange = viewModel::onDescriptionChange,
+                    placeholder = { Text("Tambahkan detail tugas...") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    maxLines = 5,
+                    shape = RoundedCornerShape(12.dp)
+                )
+            }
+
+            // ── Kuadran Eisenhower ──────────────────────────────────────
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                SectionLabel("Kuadran Eisenhower")
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        QuadrantSelectorCard(
+                            quadrant = EisenhowerQuadrant.DO_FIRST,
+                            isSelected = uiState.quadrant == EisenhowerQuadrant.DO_FIRST,
+                            onClick = { viewModel.onQuadrantChange(EisenhowerQuadrant.DO_FIRST) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuadrantSelectorCard(
+                            quadrant = EisenhowerQuadrant.SCHEDULE,
+                            isSelected = uiState.quadrant == EisenhowerQuadrant.SCHEDULE,
+                            onClick = { viewModel.onQuadrantChange(EisenhowerQuadrant.SCHEDULE) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        QuadrantSelectorCard(
+                            quadrant = EisenhowerQuadrant.DELEGATE,
+                            isSelected = uiState.quadrant == EisenhowerQuadrant.DELEGATE,
+                            onClick = { viewModel.onQuadrantChange(EisenhowerQuadrant.DELEGATE) },
+                            modifier = Modifier.weight(1f)
+                        )
+                        QuadrantSelectorCard(
+                            quadrant = EisenhowerQuadrant.ELIMINATE,
+                            isSelected = uiState.quadrant == EisenhowerQuadrant.ELIMINATE,
+                            onClick = { viewModel.onQuadrantChange(EisenhowerQuadrant.ELIMINATE) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
+            // Error
             if (uiState.error != null) {
                 Text(
                     text = uiState.error!!,
@@ -165,7 +207,7 @@ fun AddEditTaskScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             Button(
                 onClick = viewModel::saveTask,
@@ -179,11 +221,70 @@ fun AddEditTaskScreen(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.size(8.dp))
-                Text(if (uiState.isEditMode) "Update Task" else "Create Task")
+                Text(if (uiState.isEditMode) "Simpan Perubahan" else "Buat Tugas")
             }
         }
     }
 }
+
+// ── Section label ──────────────────────────────────────────────────────────
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurface
+    )
+}
+
+// ── Category chip ──────────────────────────────────────────────────────────
+
+@Composable
+private fun CategoryChip(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    val bgColor = if (isSelected)
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+    else
+        MaterialTheme.colorScheme.surfaceVariant
+
+    val textColor = if (isSelected)
+        MaterialTheme.colorScheme.primary
+    else
+        MaterialTheme.colorScheme.onSurfaceVariant
+
+    val borderColor = if (isSelected)
+        MaterialTheme.colorScheme.primary
+    else
+        MaterialTheme.colorScheme.outlineVariant
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(20.dp))
+            .background(bgColor)
+            .border(
+                width = if (isSelected) 1.5.dp else 1.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(20.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 8.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Normal,
+            color = textColor
+        )
+    }
+}
+
+// ── Quadrant selector card ─────────────────────────────────────────────────
 
 @Composable
 private fun QuadrantSelectorCard(
@@ -198,11 +299,8 @@ private fun QuadrantSelectorCard(
         modifier = modifier,
         shape = RoundedCornerShape(10.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) {
-                accentColor.copy(alpha = 0.12f)
-            } else {
-                MaterialTheme.colorScheme.surface
-            }
+            containerColor = if (isSelected) accentColor.copy(alpha = 0.12f)
+            else MaterialTheme.colorScheme.surface
         ),
         border = BorderStroke(
             width = if (isSelected) 2.dp else 1.dp,
@@ -224,11 +322,8 @@ private fun QuadrantSelectorCard(
             Text(
                 text = quadrant.description,
                 style = MaterialTheme.typography.labelSmall,
-                color = if (isSelected) {
-                    accentColor.copy(alpha = 0.8f)
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
+                color = if (isSelected) accentColor.copy(alpha = 0.8f)
+                else MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

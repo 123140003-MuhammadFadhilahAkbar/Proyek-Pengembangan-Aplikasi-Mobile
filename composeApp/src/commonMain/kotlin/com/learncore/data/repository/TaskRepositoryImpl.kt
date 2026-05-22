@@ -53,6 +53,7 @@ class TaskRepositoryImpl(private val database: LearnCoreDatabase) : TaskReposito
         val v = task.toEntityValues()
         queries.insertTask(
             title = v.title,
+            category = v.category,
             description = v.description,
             quadrant = v.quadrant,
             is_completed = v.isCompleted,
@@ -68,6 +69,7 @@ class TaskRepositoryImpl(private val database: LearnCoreDatabase) : TaskReposito
         queries.updateTask(
             id = task.id,
             title = v.title,
+            category = v.category,
             description = v.description,
             quadrant = v.quadrant,
             deadline = v.deadline,
@@ -77,8 +79,8 @@ class TaskRepositoryImpl(private val database: LearnCoreDatabase) : TaskReposito
 
     override suspend fun toggleTaskCompletion(id: Long) = withContext(Dispatchers.Default) {
         queries.toggleTaskCompletion(
-            id = id,
-            updated_at = Clock.System.now().toEpochMilliseconds()
+            updated_at = Clock.System.now().toEpochMilliseconds(),
+            id = id
         )
     }
 
