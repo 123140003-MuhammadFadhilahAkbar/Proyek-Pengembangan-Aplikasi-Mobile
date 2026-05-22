@@ -225,6 +225,8 @@ private fun createNavigationActions(navController: NavHostController): Navigatio
 
         override fun navigateToTaskList(quadrantFilter: String?) {
             navController.navigate(Route.TaskList(quadrantFilter)) {
+                // Pop semua TaskList lama agar filter tidak bocor antar-instance
+                popUpTo<Route.Dashboard>()
                 launchSingleTop = true
             }
         }

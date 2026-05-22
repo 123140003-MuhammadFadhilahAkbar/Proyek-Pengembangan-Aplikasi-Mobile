@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
+import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,6 +47,10 @@ import com.learncore.presentation.theme.QuadrantDelegate
 import com.learncore.presentation.theme.QuadrantDoFirst
 import com.learncore.presentation.theme.QuadrantEliminate
 import com.learncore.presentation.theme.QuadrantSchedule
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 // ==================== QUADRANT COLOR UTILS ====================
 
@@ -99,6 +104,33 @@ fun QuadrantBadge(
 
 // ==================== TASK CARD ====================
 
+/** Format an Instant deadline into a human-readable label. */
+private fun formatDeadline(deadline: Instant): String {
+    val tz = TimeZone.currentSystemDefault()
+    val now = Clock.System.now().toLocalDateTime(tz)
+    val dt = deadline.toLocalDateTime(tz)
+
+    val dayLabel = when {
+        dt.date == now.date -> "Today"
+        dt.date.toEpochDays() == now.date.toEpochDays() + 1 -> "Tomorrow"
+        dt.date.toEpochDays() == now.date.toEpochDays() - 1 -> "Yesterday"
+        else -> "${dt.date.dayOfMonth} ${
+            dt.date.month.name.lowercase().replaceFirstChar { it.uppercase() }.take(3)
+        }"
+    }
+
+    val hour = dt.hour
+    val minute = dt.minute
+    val amPm = if (hour < 12) "AM" else "PM"
+    val displayHour = when {
+        hour == 0 -> 12
+        hour > 12 -> hour - 12
+        else -> hour
+    }
+    val minuteStr = minute.toString().padStart(2, '0')
+    return "$dayLabel, $displayHour:$minuteStr $amPm"
+}
+
 @Composable
 fun TaskCard(
     task: Task,
@@ -106,88 +138,179 @@ fun TaskCard(
     onToggleComplete: (Long) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val alpha by animateFloatAsState(
-        targetValue = if (task.isCompleted) 0.55f else 1f,
-        animationSpec = tween(200),
-        label = "taskAlpha"
+    val quadrantColor = task.quadrant.color()
+
+    // Card background: abu-abu redup untuk completed, putih untuk aktif
+    val cardBackground by animateColorAsState(
+        targetValue = if (task.isCompleted)
+            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+        else
+            MaterialTheme.colorScheme.surface,
+        animationSpec = tween(250),
+        label = "cardBg"
     )
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .alpha(alpha)
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
+        colors = CardDefaults.cardColors(containerColor = cardBackground),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         border = androidx.compose.foundation.BorderStroke(
             width = 1.dp,
-            color = MaterialTheme.colorScheme.outlineVariant
+            color = if (task.isCompleted)
+                MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            else
+                MaterialTheme.colorScheme.outlineVariant
         )
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            // Quadrant color strip
+
+            // ── Baris 1: Badge Eisenhower ────────────────────────────────
             Box(
                 modifier = Modifier
-                    .width(3.dp)
-                    .height(40.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(task.quadrant.color())
-            )
+                    .clip(RoundedCornerShape(4.dp))
+                    .background(quadrantColor.copy(alpha = if (task.isCompleted) 0.07f else 0.13f))
+                    .padding(horizontal = 7.dp, vertical = 3.dp)
+            ) {
+                Text(
+                    text = task.quadrant.description.uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = quadrantColor.copy(alpha = if (task.isCompleted) 0.6f else 1f),
+                    fontWeight = FontWeight.Bold
+                )
+            }
 
-            Spacer(modifier = Modifier.width(12.dp))
+            // ── Baris 2: Checkbox + Judul ────────────────────────────────
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                // Tombol complete — selalu biru (primary) saat checked
+                IconButton(
+                    onClick = { onToggleComplete(task.id) },
+                    modifier = Modifier.size(28.dp)
+                ) {
+                    val checkColor by animateColorAsState(
+                        targetValue = if (task.isCompleted)
+                            MaterialTheme.colorScheme.primary      // biru
+                        else
+                            MaterialTheme.colorScheme.outline,
+                        animationSpec = tween(200),
+                        label = "checkColor"
+                    )
+                    Icon(
+                        imageVector = if (task.isCompleted)
+                            Icons.Outlined.CheckCircle
+                        else
+                            Icons.Outlined.RadioButtonUnchecked,
+                        contentDescription = if (task.isCompleted) "Tandai belum selesai" else "Tandai selesai",
+                        tint = checkColor,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
 
-            Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = task.title,
                     style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Medium,
-                    maxLines = 1,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                     textDecoration = if (task.isCompleted) TextDecoration.LineThrough else null,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = if (task.isCompleted)
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    else
+                        MaterialTheme.colorScheme.onSurface
                 )
-                if (task.description.isNotBlank()) {
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Text(
-                        text = task.description,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-                Spacer(modifier = Modifier.height(6.dp))
-                QuadrantBadge(quadrant = task.quadrant)
             }
 
-            Spacer(modifier = Modifier.width(8.dp))
-
-            IconButton(
-                onClick = { onToggleComplete(task.id) },
-                modifier = Modifier.size(36.dp)
+            // ── Baris 3: Chip tipe kuadran + deadline / label selesai ────
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Icon(
-                    imageVector = if (task.isCompleted) {
-                        Icons.Outlined.CheckCircle
-                    } else {
-                        Icons.Outlined.RadioButtonUnchecked
-                    },
-                    contentDescription = if (task.isCompleted) "Mark incomplete" else "Mark complete",
-                    tint = if (task.isCompleted) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.outline
-                    },
-                    modifier = Modifier.size(22.dp)
-                )
+                if (task.isCompleted) {
+                    // Label "Selesai" menggantikan semua chip
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f))
+                            .padding(horizontal = 8.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = "Selesai",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                } else {
+                    // Chip tipe kuadran (Do First, Schedule, dll.)
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(quadrantColor.copy(alpha = 0.10f))
+                            .padding(horizontal = 7.dp, vertical = 3.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        QuadrantDot(quadrant = task.quadrant, size = 6.dp)
+                        Text(
+                            text = task.quadrant.action,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = quadrantColor,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    // Chip deadline (jika ada)
+                    if (task.deadline != null) {
+                        Row(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .padding(horizontal = 7.dp, vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.CalendarToday,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(11.dp)
+                            )
+                            Text(
+                                text = formatDeadline(task.deadline),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    // Chip deskripsi/kategori (jika diisi)
+                    if (task.description.isNotBlank()) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant)
+                                .padding(horizontal = 7.dp, vertical = 3.dp)
+                        ) {
+                            Text(
+                                text = task.description,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
             }
         }
     }
