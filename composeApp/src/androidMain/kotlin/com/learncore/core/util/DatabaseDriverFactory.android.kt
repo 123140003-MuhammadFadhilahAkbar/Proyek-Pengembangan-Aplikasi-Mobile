@@ -31,6 +31,11 @@ actual class DatabaseDriverFactory(private val context: Context) {
                             db.execSQL("ALTER TABLE TaskEntity ADD COLUMN deadline INTEGER")
                         }
                     }
+                    if (oldVersion < 3) {
+                        runCatching {
+                            db.execSQL("ALTER TABLE TaskEntity ADD COLUMN reminder_minutes INTEGER")
+                        }
+                    }
                 }
             }
         )

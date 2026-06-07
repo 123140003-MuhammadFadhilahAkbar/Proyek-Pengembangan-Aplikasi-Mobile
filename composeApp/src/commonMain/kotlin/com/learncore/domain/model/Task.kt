@@ -11,6 +11,7 @@ data class Task(
     val quadrant: EisenhowerQuadrant = EisenhowerQuadrant.DO_FIRST,
     val isCompleted: Boolean = false,
     val deadline: Instant? = null,
+    val reminderMinutes: Int? = null,
     val createdAt: Instant = Clock.System.now(),
     val updatedAt: Instant = Clock.System.now()
 ) {

@@ -1,8 +1,10 @@
 package com.learncore.core.notification
 
+import android.Manifest
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.pm.PackageManager
 import android.media.RingtoneManager
 import android.os.Build
 import android.os.VibrationEffect
@@ -10,6 +12,7 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import androidx.core.content.ContextCompat
 
 class PomodoroNotifierImpl(private val context: Context) : PomodoroNotifier {
 
@@ -35,6 +38,17 @@ class PomodoroNotifierImpl(private val context: Context) : PomodoroNotifier {
             }
             val manager = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
+        }
+    }
+
+    private fun hasNotificationPermission(): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
         }
     }
 
@@ -64,6 +78,7 @@ class PomodoroNotifierImpl(private val context: Context) : PomodoroNotifier {
     }
 
     private fun showNotification(title: String, message: String) {
+        if (!hasNotificationPermission()) return
         try {
             val notification = NotificationCompat.Builder(context, CHANNEL_ID)
                 .setSmallIcon(android.R.drawable.ic_dialog_info)

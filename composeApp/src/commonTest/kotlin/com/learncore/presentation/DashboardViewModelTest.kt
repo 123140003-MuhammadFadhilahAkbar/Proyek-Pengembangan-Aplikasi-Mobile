@@ -1,5 +1,10 @@
 package com.learncore.presentation
 
+import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
+import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.emptyPreferences
+import com.learncore.data.local.datastore.UserPreferences
 import com.learncore.domain.model.EisenhowerQuadrant
 import com.learncore.domain.model.ProductivityStats
 import com.learncore.domain.model.Task
@@ -7,7 +12,6 @@ import com.learncore.domain.repository.TaskRepository
 import com.learncore.domain.usecase.GetAllTasksUseCase
 import com.learncore.domain.usecase.GetProductivityStatsUseCase
 import com.learncore.presentation.screens.dashboard.DashboardViewModel
-import app.cash.turbine.test
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -22,6 +26,18 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertTrue
+
+// Fake DataStore untuk UserPreferences
+class FakeDataStore : DataStore<Preferences> {
+    private val flow = MutableStateFlow<Preferences>(emptyPreferences())
+    override val data: Flow<Preferences> = flow
+    override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences): Preferences {
+        val updated = transform(flow.value)
+        flow.value = updated
+        return updated
+    }
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DashboardViewModelTest {
@@ -35,9 +51,11 @@ class DashboardViewModelTest {
     fun setup() {
         Dispatchers.setMain(testDispatcher)
         fakeRepository = FakeDashboardRepository()
+        val fakePrefs = UserPreferences(FakeDataStore())
         viewModel = DashboardViewModel(
             getAllTasksUseCase = GetAllTasksUseCase(fakeRepository),
-            getProductivityStatsUseCase = GetProductivityStatsUseCase(fakeRepository)
+            getProductivityStatsUseCase = GetProductivityStatsUseCase(fakeRepository),
+            userPreferences = fakePrefs
         )
     }
 
@@ -47,10 +65,8 @@ class DashboardViewModelTest {
     }
 
     @Test
-    fun `initial state is loading`() = runTest {
-        // State starts as loading before tasks arrive
+    fun `initial state is loading or empty`() = runTest {
         val state = viewModel.uiState.value
-        // isLoading should be true initially (before first emission)
         assertEquals(true, state.isLoading || state.tasks.isEmpty())
     }
 
@@ -82,14 +98,70 @@ class DashboardViewModelTest {
         val state = viewModel.uiState.value
         assertEquals(0, state.quadrantCounts[EisenhowerQuadrant.DO_FIRST])
     }
+
+    @Test
+    fun `tasks update when repository emits new list`() = runTest {
+        fakeRepository.emitTasks(listOf(Task(id = 1, title = "Task A")))
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(1, viewModel.uiState.value.tasks.size)
+
+        fakeRepository.emitTasks(listOf(
+            Task(id = 1, title = "Task A"),
+            Task(id = 2, title = "Task B")
+        ))
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertEquals(2, viewModel.uiState.value.tasks.size)
+    }
+
+    @Test
+    fun `isLoading becomes false after tasks emitted`() = runTest {
+        fakeRepository.emitTasks(emptyList())
+        testDispatcher.scheduler.advanceUntilIdle()
+        assertFalse(viewModel.uiState.value.isLoading)
+    }
+
+    @Test
+    fun `all four quadrant counts initialized to zero when no tasks`() = runTest {
+        fakeRepository.emitTasks(emptyList())
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val counts = viewModel.uiState.value.quadrantCounts
+        assertEquals(4, counts.size)
+        assertTrue(counts.values.all { it == 0 })
+    }
+
+    @Test
+    fun `ELIMINATE quadrant tasks counted correctly`() = runTest {
+        val tasks = listOf(
+            Task(id = 1, title = "Low prio 1", quadrant = EisenhowerQuadrant.ELIMINATE),
+            Task(id = 2, title = "Low prio 2", quadrant = EisenhowerQuadrant.ELIMINATE)
+        )
+        fakeRepository.emitTasks(tasks)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        assertEquals(2, viewModel.uiState.value.quadrantCounts[EisenhowerQuadrant.ELIMINATE])
+    }
+
+    @Test
+    fun `mixed completed and active tasks - only active counted per quadrant`() = runTest {
+        val tasks = listOf(
+            Task(id = 1, title = "Active DELEGATE", quadrant = EisenhowerQuadrant.DELEGATE),
+            Task(id = 2, title = "Done DELEGATE", quadrant = EisenhowerQuadrant.DELEGATE, isCompleted = true),
+            Task(id = 3, title = "Active SCHEDULE", quadrant = EisenhowerQuadrant.SCHEDULE),
+        )
+        fakeRepository.emitTasks(tasks)
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val counts = viewModel.uiState.value.quadrantCounts
+        assertEquals(1, counts[EisenhowerQuadrant.DELEGATE])
+        assertEquals(1, counts[EisenhowerQuadrant.SCHEDULE])
+    }
 }
 
 class FakeDashboardRepository : TaskRepository {
     private val tasksFlow = MutableStateFlow<List<Task>>(emptyList())
 
-    fun emitTasks(tasks: List<Task>) {
-        tasksFlow.value = tasks
-    }
+    fun emitTasks(tasks: List<Task>) { tasksFlow.value = tasks }
 
     override fun getAllTasks(): Flow<List<Task>> = tasksFlow
     override fun getTasksByQuadrant(quadrant: EisenhowerQuadrant): Flow<List<Task>> = flowOf(emptyList())

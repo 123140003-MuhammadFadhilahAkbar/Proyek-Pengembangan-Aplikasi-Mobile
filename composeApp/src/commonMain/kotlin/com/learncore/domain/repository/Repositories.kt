@@ -5,7 +5,7 @@ import com.learncore.domain.model.ProductivityStats
 import com.learncore.domain.model.Task
 import kotlinx.coroutines.flow.Flow
 
-interface TaskRepository {
+interface TaskRepository { 
     fun getAllTasks(): Flow<List<Task>>
     fun getTasksByQuadrant(quadrant: EisenhowerQuadrant): Flow<List<Task>>
     fun getActiveTasks(): Flow<List<Task>>

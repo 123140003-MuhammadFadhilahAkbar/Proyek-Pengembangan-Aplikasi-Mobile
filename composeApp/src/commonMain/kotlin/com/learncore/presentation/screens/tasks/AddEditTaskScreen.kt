@@ -20,20 +20,29 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Check
+import androidx.compose.material.icons.outlined.DateRange
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -42,6 +51,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.learncore.domain.model.EisenhowerQuadrant
 import com.learncore.presentation.components.color
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -109,11 +121,7 @@ fun AddEditTaskScreen(
             // ── 2. Kategori ─────────────────────────────────────────────
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 SectionLabel("Kategori")
-
-                // Chip preset
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     DEFAULT_CATEGORIES.forEach { cat ->
                         val isSelected = !uiState.isCustomCategory && uiState.category == cat
                         CategoryChip(
@@ -122,15 +130,12 @@ fun AddEditTaskScreen(
                             onClick = { viewModel.onCategorySelect(cat) }
                         )
                     }
-                    // Chip "Lainnya"
                     CategoryChip(
                         label = "Lainnya...",
                         isSelected = uiState.isCustomCategory,
                         onClick = { viewModel.onCustomCategoryToggle() }
                     )
                 }
-
-                // Input custom jika "Lainnya" dipilih
                 if (uiState.isCustomCategory) {
                     OutlinedTextField(
                         value = uiState.customCategory,
@@ -143,7 +148,7 @@ fun AddEditTaskScreen(
                 }
             }
 
-            // ── 3. Deskripsi / Detail ───────────────────────────────────
+            // ── 3. Deskripsi ────────────────────────────────────────────
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 SectionLabel("Deskripsi (opsional)")
                 OutlinedTextField(
@@ -157,7 +162,27 @@ fun AddEditTaskScreen(
                 )
             }
 
-            // ── Kuadran Eisenhower ──────────────────────────────────────
+            // ── 4. Deadline ─────────────────────────────────────────────
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SectionLabel("Deadline (opsional)")
+                DeadlinePicker(
+                    selectedMillis = uiState.deadlineMillis,
+                    onDeadlineSelected = viewModel::onDeadlineChange
+                )
+            }
+
+            // ── 5. Reminder (hanya tampil jika ada deadline) ────────────
+            if (uiState.deadlineMillis != null) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SectionLabel("Ingatkan Saya")
+                    ReminderPicker(
+                        selectedMinutes = uiState.reminderMinutes,
+                        onReminderSelected = viewModel::onReminderChange
+                    )
+                }
+            }
+
+            // ── 6. Kuadran Eisenhower ───────────────────────────────────
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 SectionLabel("Kuadran Eisenhower")
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -198,7 +223,6 @@ fun AddEditTaskScreen(
                 }
             }
 
-            // Error
             if (uiState.error != null) {
                 Text(
                     text = uiState.error!!,
@@ -215,13 +239,101 @@ fun AddEditTaskScreen(
                 shape = RoundedCornerShape(10.dp),
                 enabled = !uiState.isLoading
             ) {
-                Icon(
-                    Icons.Outlined.Check,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
+                Icon(Icons.Outlined.Check, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(modifier = Modifier.size(8.dp))
                 Text(if (uiState.isEditMode) "Simpan Perubahan" else "Buat Tugas")
+            }
+        }
+    }
+}
+
+// ── Deadline Picker ────────────────────────────────────────────────────────
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DeadlinePicker(
+    selectedMillis: Long?,
+    onDeadlineSelected: (Long?) -> Unit
+) {
+    var showPicker by remember { mutableStateOf(false) }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        FilledTonalButton(
+            onClick = { showPicker = true },
+            modifier = Modifier.weight(1f),
+            shape = RoundedCornerShape(10.dp)
+        ) {
+            Icon(Icons.Outlined.DateRange, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.size(6.dp))
+            Text(
+                text = if (selectedMillis != null) {
+                    val dt = Instant.fromEpochMilliseconds(selectedMillis)
+                        .toLocalDateTime(TimeZone.currentSystemDefault())
+                    "%02d/%02d/%d %02d:%02d".format(
+                        dt.dayOfMonth, dt.monthNumber, dt.year, dt.hour, dt.minute
+                    )
+                } else {
+                    "Pilih Tanggal & Waktu"
+                },
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+        if (selectedMillis != null) {
+            TextButton(onClick = { onDeadlineSelected(null) }) {
+                Text("Hapus", color = MaterialTheme.colorScheme.error)
+            }
+        }
+    }
+
+    if (showPicker) {
+        PlatformDateTimePicker(
+            initialMillis = selectedMillis ?: System.currentTimeMillis(),
+            onConfirm = { millis ->
+                onDeadlineSelected(millis)
+                showPicker = false
+            },
+            onDismiss = { showPicker = false }
+        )
+    }
+}
+
+// ── Reminder Picker ────────────────────────────────────────────────────────
+
+@Composable
+private fun ReminderPicker(
+    selectedMinutes: Int?,
+    onReminderSelected: (Int?) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedLabel = REMINDER_OPTIONS.find { it.first == selectedMinutes }?.second
+        ?: "Tidak ada"
+
+    Box {
+        FilledTonalButton(
+            onClick = { expanded = true },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(10.dp)
+        ) {
+            Icon(Icons.Outlined.Notifications, contentDescription = null, modifier = Modifier.size(16.dp))
+            Spacer(modifier = Modifier.size(6.dp))
+            Text(selectedLabel, style = MaterialTheme.typography.bodyMedium)
+        }
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            REMINDER_OPTIONS.forEach { (minutes, label) ->
+                DropdownMenuItem(
+                    text = { Text(label) },
+                    onClick = {
+                        onReminderSelected(minutes)
+                        expanded = false
+                    }
+                )
             }
         }
     }
@@ -242,25 +354,13 @@ private fun SectionLabel(text: String) {
 // ── Category chip ──────────────────────────────────────────────────────────
 
 @Composable
-private fun CategoryChip(
-    label: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    val bgColor = if (isSelected)
-        MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
-    else
-        MaterialTheme.colorScheme.surfaceVariant
-
-    val textColor = if (isSelected)
-        MaterialTheme.colorScheme.primary
-    else
-        MaterialTheme.colorScheme.onSurfaceVariant
-
-    val borderColor = if (isSelected)
-        MaterialTheme.colorScheme.primary
-    else
-        MaterialTheme.colorScheme.outlineVariant
+private fun CategoryChip(label: String, isSelected: Boolean, onClick: () -> Unit) {
+    val bgColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)
+    else MaterialTheme.colorScheme.surfaceVariant
+    val textColor = if (isSelected) MaterialTheme.colorScheme.primary
+    else MaterialTheme.colorScheme.onSurfaceVariant
+    val borderColor = if (isSelected) MaterialTheme.colorScheme.primary
+    else MaterialTheme.colorScheme.outlineVariant
 
     Box(
         modifier = Modifier
@@ -294,7 +394,6 @@ private fun QuadrantSelectorCard(
     modifier: Modifier = Modifier
 ) {
     val accentColor = quadrant.color()
-
     Card(
         modifier = modifier,
         shape = RoundedCornerShape(10.dp),
@@ -309,10 +408,7 @@ private fun QuadrantSelectorCard(
         elevation = CardDefaults.cardElevation(0.dp),
         onClick = onClick
     ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(2.dp)
-        ) {
+        Column(modifier = Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
             Text(
                 text = quadrant.action,
                 style = MaterialTheme.typography.labelMedium,
