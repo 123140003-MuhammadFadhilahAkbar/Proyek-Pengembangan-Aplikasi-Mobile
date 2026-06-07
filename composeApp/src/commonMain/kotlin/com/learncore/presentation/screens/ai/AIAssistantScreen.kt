@@ -53,7 +53,10 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.learncore.core.network.NetworkMonitor
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -62,6 +65,8 @@ fun AIAssistantScreen(
     viewModel: AIAssistantViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val networkMonitor: NetworkMonitor = koinInject()
+    val isOnline by networkMonitor.isOnline.collectAsState(initial = true)
     val listState = rememberLazyListState()
 
     LaunchedEffect(uiState.messages.size) {
@@ -107,6 +112,17 @@ fun AIAssistantScreen(
                 .padding(padding)
                 .imePadding()
         ) {
+            if (!isOnline) {
+                Text(
+                    text = "Offline — AI Assistant tidak tersedia",
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.errorContainer)
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    color = MaterialTheme.colorScheme.onErrorContainer,
+                    style = MaterialTheme.typography.labelMedium
+                )
+            }
             // Messages list
             LazyColumn(
                 state = listState,

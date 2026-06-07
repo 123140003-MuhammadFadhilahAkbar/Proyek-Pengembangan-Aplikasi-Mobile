@@ -3,6 +3,9 @@
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
 
     <application
         android:name=".LearnCoreApplication"
@@ -10,6 +13,10 @@
         android:label="LearnCore"
         android:theme="@style/Theme.LearnCore"
         android:supportsRtl="true">
+
+        <receiver
+            android:name="com.learncore.core.notification.DeadlineNotificationReceiver"
+            android:exported="false" />
 
         <activity
             android:name=".MainActivity"

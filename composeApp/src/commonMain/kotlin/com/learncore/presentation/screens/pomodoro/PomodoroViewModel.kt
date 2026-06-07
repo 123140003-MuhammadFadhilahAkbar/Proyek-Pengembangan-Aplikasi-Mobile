@@ -2,6 +2,7 @@ package com.learncore.presentation.screens.pomodoro
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.learncore.core.notification.PomodoroNotifier
 import com.learncore.data.local.datastore.UserPreferences
 import com.learncore.domain.model.Task
 import com.learncore.domain.usecase.GetActiveTasksUseCase
@@ -13,6 +14,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 enum class TimerPhase { WORK, BREAK }
 enum class TimerStatus { IDLE, RUNNING, PAUSED }
@@ -26,7 +29,6 @@ data class PomodoroUiState(
     val activeTasks: List<Task> = emptyList(),
     val selectedTask: Task? = null,
 
-    // Break Before Next Task state
     val showBreakBeforeNextTask: Boolean = false,
     val breakBeforeNextTaskSeconds: Int = 5 * 60,
     val breakBeforeNextTaskTotal: Int = 5 * 60
@@ -58,7 +60,11 @@ class PomodoroViewModel(
     private val recordPomodoroSessionUseCase: RecordPomodoroSessionUseCase,
     private val toggleTaskCompletionUseCase: ToggleTaskCompletionUseCase,
     private val userPreferences: UserPreferences
-) : ViewModel() {
+) : ViewModel(), KoinComponent {
+
+    private val notifier: PomodoroNotifier by inject()
+
+    private var notificationsEnabled = true
 
     private val _uiState = MutableStateFlow(PomodoroUiState())
     val uiState: StateFlow<PomodoroUiState> = _uiState.asStateFlow()
@@ -68,11 +74,8 @@ class PomodoroViewModel(
     private var workDurationSeconds = 25 * 60
     private var breakDurationSeconds = 5 * 60
 
-    // Simpan sisa detik sebelumnya saat Next ditekan (bukan reset)
     private var savedWorkSeconds: Int? = null
     private var savedBreakSeconds: Int? = null
-
-    // Task yang harus di-centang setelah break selesai
     private var taskToCompleteAfterBreak: Long? = null
 
     init {
@@ -81,6 +84,11 @@ class PomodoroViewModel(
     }
 
     private fun loadPreferences() {
+        viewModelScope.launch {
+            userPreferences.notificationsEnabled.collect { enabled ->
+                notificationsEnabled = enabled
+            }
+        }
         viewModelScope.launch {
             userPreferences.pomodoroWorkMinutes.collect { minutes ->
                 workDurationSeconds = minutes * 60
@@ -109,7 +117,6 @@ class PomodoroViewModel(
 
     fun selectTask(task: Task?) {
         _uiState.value = _uiState.value.copy(selectedTask = task)
-        // Reset saved seconds when user manually picks a new task
         savedWorkSeconds = null
         savedBreakSeconds = null
     }
@@ -139,15 +146,10 @@ class PomodoroViewModel(
         _uiState.value = _uiState.value.copy(status = TimerStatus.PAUSED)
     }
 
-    /**
-     * Next: pindah fase tanpa reset detik — lanjut dari sisa sebelumnya.
-     * Jika kembali ke fase yang sama, pakai sisa detik yang disimpan.
-     */
     fun nextPhase() {
         timerJob?.cancel()
         val state = _uiState.value
         if (state.phase == TimerPhase.WORK) {
-            // Simpan sisa work detik saat ini
             savedWorkSeconds = state.remainingSeconds
             viewModelScope.launch {
                 recordPomodoroSessionUseCase(
@@ -155,7 +157,6 @@ class PomodoroViewModel(
                     durationSeconds = state.totalSeconds - state.remainingSeconds
                 )
             }
-            // Lanjut ke break dengan sisa detik break sebelumnya (atau full jika belum pernah)
             val resumeBreak = savedBreakSeconds ?: breakDurationSeconds
             _uiState.value = state.copy(
                 phase = TimerPhase.BREAK,
@@ -165,9 +166,7 @@ class PomodoroViewModel(
                 remainingSeconds = resumeBreak
             )
         } else {
-            // Simpan sisa break detik
             savedBreakSeconds = state.remainingSeconds
-            // Lanjut ke work dengan sisa detik work sebelumnya
             val resumeWork = savedWorkSeconds ?: workDurationSeconds
             _uiState.value = state.copy(
                 phase = TimerPhase.WORK,
@@ -194,18 +193,12 @@ class PomodoroViewModel(
         )
     }
 
-    /**
-     * Toggle selesai dari halaman Focus.
-     */
     fun toggleTaskDone(taskId: Long) {
         viewModelScope.launch {
             toggleTaskCompletionUseCase(taskId)
         }
     }
 
-    /**
-     * Skip the "Break Before Next Task" interstitial — langsung mulai sesi berikutnya.
-     */
     fun skipBreakBeforeNextTask() {
         breakBeforeJob?.cancel()
         _uiState.value = _uiState.value.copy(
@@ -217,10 +210,8 @@ class PomodoroViewModel(
         )
     }
 
-    /**
-     * Dipanggil ketika timer break-before selesai (otomatis lanjut ke sesi kerja berikutnya).
-     */
     private fun onBreakBeforeFinished() {
+        if (notificationsEnabled) notifier.notifyBreakBeforeDone()
         _uiState.value = _uiState.value.copy(
             showBreakBeforeNextTask = false,
             phase = TimerPhase.WORK,
@@ -251,16 +242,15 @@ class PomodoroViewModel(
     private fun onTimerFinished() {
         val state = _uiState.value
         if (state.phase == TimerPhase.WORK) {
+            if (notificationsEnabled) notifier.notifyWorkDone()
             viewModelScope.launch {
                 recordPomodoroSessionUseCase(
                     taskId = state.selectedTask?.id,
                     durationSeconds = workDurationSeconds
                 )
             }
-            // Simpan task yang sedang aktif agar bisa di-centang setelah break selesai
             taskToCompleteAfterBreak = state.selectedTask?.id
             savedWorkSeconds = null
-            // Update state ke BREAK, lalu mulai timer break dalam coroutine baru
             _uiState.value = state.copy(
                 phase = TimerPhase.BREAK,
                 status = TimerStatus.IDLE,
@@ -268,7 +258,6 @@ class PomodoroViewModel(
                 totalSeconds = breakDurationSeconds,
                 remainingSeconds = breakDurationSeconds
             )
-            // Start break timer di coroutine baru (hindari race condition dengan timerJob lama)
             timerJob = viewModelScope.launch {
                 _uiState.value = _uiState.value.copy(status = TimerStatus.RUNNING)
                 while (_uiState.value.remainingSeconds > 0) {
@@ -280,6 +269,7 @@ class PomodoroViewModel(
                 onTimerFinished()
             }
         } else {
+            if (notificationsEnabled) notifier.notifyBreakDone()
             savedBreakSeconds = null
             taskToCompleteAfterBreak?.let { taskId ->
                 viewModelScope.launch {

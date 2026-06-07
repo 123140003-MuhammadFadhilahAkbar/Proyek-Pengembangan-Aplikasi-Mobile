@@ -2,12 +2,16 @@ package com.learncore.presentation.screens.ai
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.learncore.core.network.NetworkMonitor
 import com.learncore.domain.usecase.AnalyzeProductivityUseCase
 import com.learncore.domain.repository.AIRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.inject
 
 data class ChatMessage(
     val id: Long,
@@ -16,8 +20,6 @@ data class ChatMessage(
     val isLoading: Boolean = false
 )
 
-// Thread-safe monotonically increasing ID generator — avoids duplicate IDs
-// when two messages are created within the same millisecond
 private var _messageCounter = 0L
 private fun nextMessageId(): Long = ++_messageCounter
 
@@ -47,6 +49,7 @@ private val LEARNCORE_SYSTEM_PROMPT = """
     
     Rules:
     - Gunakan Bahasa Indonesia yang profesional namun ramah
+    - Jawab dengan sesingkat dan seringkas
     - Berikan respons yang konkret, actionable, dan terstruktur
     - Maksimal 250 kata per respons kecuali diminta lebih panjang
     - Fokus pada solusi praktis yang bisa langsung diterapkan
@@ -55,7 +58,9 @@ private val LEARNCORE_SYSTEM_PROMPT = """
 class AIAssistantViewModel(
     private val analyzeProductivityUseCase: AnalyzeProductivityUseCase,
     private val aiRepository: AIRepository
-) : ViewModel() {
+) : ViewModel(), KoinComponent {
+
+    private val networkMonitor: NetworkMonitor by inject()
 
     private val _uiState = MutableStateFlow(AIAssistantUiState())
     val uiState: StateFlow<AIAssistantUiState> = _uiState.asStateFlow()
@@ -68,7 +73,6 @@ class AIAssistantViewModel(
         val text = (customText ?: _uiState.value.inputText).trim()
         if (text.isBlank() || _uiState.value.isLoading) return
 
-        // Use monotonic counter instead of currentTimeMillis to guarantee unique IDs
         val userMessage = ChatMessage(id = nextMessageId(), text = text, isUser = true)
         val loadingMessage = ChatMessage(id = nextMessageId(), text = "", isUser = false, isLoading = true)
         val loadingId = loadingMessage.id
@@ -81,9 +85,23 @@ class AIAssistantViewModel(
         )
 
         viewModelScope.launch {
+            val isOnline = networkMonitor.isOnline.first()
+            if (!isOnline) {
+                val offlineMsg = ChatMessage(
+                    id = nextMessageId(),
+                    text = "Tidak ada koneksi internet. Fitur AI membutuhkan internet.",
+                    isUser = false
+                )
+                _uiState.value = _uiState.value.copy(
+                    messages = _uiState.value.messages.map { if (it.id == loadingId) offlineMsg else it },
+                    isLoading = false
+                )
+                return@launch
+            }
+
             val isProductivityRequest = text.contains("produktivit", ignoreCase = true) ||
-                text.contains("analisa", ignoreCase = true) ||
-                text.contains("statistik", ignoreCase = true)
+                    text.contains("analisa", ignoreCase = true) ||
+                    text.contains("statistik", ignoreCase = true)
 
             val result = runCatching {
                 if (isProductivityRequest) {
@@ -100,12 +118,12 @@ class AIAssistantViewModel(
                     onFailure = { e ->
                         when {
                             e.message?.contains("401") == true ||
-                            e.message?.contains("API key") == true ->
+                                    e.message?.contains("API key") == true ->
                                 "API key Gemini tidak valid atau belum dikonfigurasi. Tambahkan GEMINI_API_KEY di local.properties."
                             e.message?.contains("Empty response") == true ->
                                 "AI tidak memberikan respons. Coba ulangi pertanyaanmu."
                             e.message?.contains("UnresolvedAddressException") == true ||
-                            e.message?.contains("ConnectException") == true ->
+                                    e.message?.contains("ConnectException") == true ->
                                 "Tidak ada koneksi internet. Periksa koneksimu dan coba lagi."
                             else ->
                                 "Terjadi kesalahan: ${e.message ?: "Unknown error"}. Coba lagi."
@@ -115,7 +133,6 @@ class AIAssistantViewModel(
                 isUser = false
             )
 
-            // Replace the loading message identified by its unique ID
             _uiState.value = _uiState.value.copy(
                 messages = _uiState.value.messages.map { msg ->
                     if (msg.id == loadingId) aiMessage else msg

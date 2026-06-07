@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.sqldelight)
+    id("org.jetbrains.kotlinx.kover") version "0.8.3"
 }
 
 // Load API key from local.properties
@@ -143,6 +144,40 @@ sqldelight {
             schemaOutputDirectory.set(file("src/commonMain/sqldelight/migrations"))
             migrationOutputFileFormat.set(".sqm")
             verifyMigrations.set(false)
+            version = 3
+        }
+    }
+}
+
+dependencies {
+    androidTestImplementation("androidx.test.ext:junit:1.1.5")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.compose.ui:ui-test-junit4:1.6.7")
+    debugImplementation("androidx.compose.ui:ui-test-manifest:1.6.7")
+}
+
+kover {
+    reports {
+        filters {
+            excludes {
+                classes(
+                    "*.BuildConfig",
+                    "*.*_Factory*",
+                    "*.*Module*",
+                    "com.learncore.android.*",
+                    "com.learncore.data.local.composeApp.*",
+                    "com.learncore.data.local.Get*",
+                    "com.learncore.data.local.Count*",
+                    "com.learncore.data.local.LearnCore*",
+                    "com.learncore.data.local.TaskEntity",
+                    "com.learncore.data.local.PomodoroSession*"
+                )
+            }
+        }
+        verify {
+            rule {
+                minBound(50)
+            }
         }
     }
 }

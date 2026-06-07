@@ -5,7 +5,6 @@ import app.cash.sqldelight.coroutines.mapToList
 import app.cash.sqldelight.coroutines.mapToOneOrNull
 import com.learncore.data.local.LearnCoreDatabase
 import com.learncore.data.local.entity.toDomain
-import com.learncore.data.local.entity.toDomainList
 import com.learncore.data.local.entity.toEntityValues
 import com.learncore.domain.model.EisenhowerQuadrant
 import com.learncore.domain.model.ProductivityStats
@@ -25,21 +24,21 @@ class TaskRepositoryImpl(private val database: LearnCoreDatabase) : TaskReposito
         return queries.getAllTasks()
             .asFlow()
             .mapToList(Dispatchers.Default)
-            .map { it.toDomainList() }
+            .map { list -> list.map { it.toDomain() } }
     }
 
     override fun getTasksByQuadrant(quadrant: EisenhowerQuadrant): Flow<List<Task>> {
         return queries.getTasksByQuadrant(quadrant.name)
             .asFlow()
             .mapToList(Dispatchers.Default)
-            .map { it.toDomainList() }
+            .map { list -> list.map { it.toDomain() } }
     }
 
     override fun getActiveTasks(): Flow<List<Task>> {
         return queries.getActiveTasks()
             .asFlow()
             .mapToList(Dispatchers.Default)
-            .map { it.toDomainList() }
+            .map { list -> list.map { it.toDomain() } }
     }
 
     override fun getTaskById(id: Long): Flow<Task?> {
@@ -58,6 +57,7 @@ class TaskRepositoryImpl(private val database: LearnCoreDatabase) : TaskReposito
             quadrant = v.quadrant,
             is_completed = v.isCompleted,
             deadline = v.deadline,
+            reminder_minutes = v.reminderMinutes,
             created_at = v.createdAt,
             updated_at = v.updatedAt
         )
@@ -73,6 +73,7 @@ class TaskRepositoryImpl(private val database: LearnCoreDatabase) : TaskReposito
             description = v.description,
             quadrant = v.quadrant,
             deadline = v.deadline,
+            reminder_minutes = v.reminderMinutes,
             updated_at = Clock.System.now().toEpochMilliseconds()
         )
     }

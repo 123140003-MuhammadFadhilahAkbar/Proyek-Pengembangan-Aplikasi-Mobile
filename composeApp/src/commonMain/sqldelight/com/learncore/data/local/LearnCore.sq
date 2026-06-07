@@ -9,6 +9,7 @@ CREATE TABLE TaskEntity (
     quadrant TEXT NOT NULL DEFAULT 'DO_FIRST',
     is_completed INTEGER NOT NULL DEFAULT 0,
     deadline INTEGER,
+    reminder_minutes INTEGER,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
 );
@@ -42,21 +43,26 @@ SELECT * FROM TaskEntity
 WHERE id = ?;
 
 insertTask:
-INSERT INTO TaskEntity (title, category, description, quadrant, is_completed, deadline, created_at, updated_at)
-VALUES (?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO TaskEntity (title, category, description, quadrant, is_completed, deadline, reminder_minutes, created_at, updated_at)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 lastInsertId:
 SELECT last_insert_rowid();
 
 updateTask:
 UPDATE TaskEntity
-SET title = ?, category = ?, description = ?, quadrant = ?, deadline = ?, updated_at = ?
+SET title = ?, category = ?, description = ?, quadrant = ?, deadline = ?, reminder_minutes = ?, updated_at = ?
 WHERE id = ?;
 
 toggleTaskCompletion:
 UPDATE TaskEntity
 SET is_completed = CASE WHEN is_completed = 1 THEN 0 ELSE 1 END, updated_at = ?
 WHERE id = ?;
+
+getTasksWithDeadline:
+SELECT * FROM TaskEntity
+WHERE deadline IS NOT NULL AND is_completed = 0
+ORDER BY deadline ASC;
 
 deleteTaskById:
 DELETE FROM TaskEntity

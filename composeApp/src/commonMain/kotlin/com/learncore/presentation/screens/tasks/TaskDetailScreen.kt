@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.learncore.presentation.components.LoadingIndicator
 import com.learncore.presentation.components.QuadrantBadge
+import kotlinx.datetime.toLocalDateTime
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -168,6 +169,27 @@ fun TaskDetailScreen(
                                 label = "Status",
                                 value = if (task.isCompleted) "Completed" else "Active"
                             )
+                            if (task.deadline != null) {
+                                val dt = task.deadline.toLocalDateTime(
+                                    kotlinx.datetime.TimeZone.currentSystemDefault()
+                                )
+                                InfoRow(
+                                    label = "Deadline",
+                                    value = "%02d/%02d/%d %02d:%02d".format(
+                                        dt.dayOfMonth, dt.monthNumber, dt.year, dt.hour, dt.minute
+                                    )
+                                )
+                                InfoRow(
+                                    label = "Reminder",
+                                    value = task.reminderMinutes?.let { min ->
+                                        when {
+                                            min < 60 -> "$min menit sebelum"
+                                            min < 1440 -> "${min / 60} jam sebelum"
+                                            else -> "${min / 1440} hari sebelum"
+                                        }
+                                    } ?: "Tidak ada"
+                                )
+                            }
                         }
                     }
 

@@ -13,6 +13,7 @@ fun TaskEntity.toDomain(): Task = Task(
     quadrant = EisenhowerQuadrant.fromString(quadrant),
     isCompleted = is_completed != 0L,
     deadline = deadline?.let { Instant.fromEpochMilliseconds(it) },
+    reminderMinutes = reminder_minutes?.toInt(),
     createdAt = Instant.fromEpochMilliseconds(created_at),
     updatedAt = Instant.fromEpochMilliseconds(updated_at)
 )
@@ -26,6 +27,7 @@ data class TaskEntityValues(
     val quadrant: String,
     val isCompleted: Long,
     val deadline: Long?,
+    val reminderMinutes: Long?,
     val createdAt: Long,
     val updatedAt: Long
 )
@@ -37,6 +39,7 @@ fun Task.toEntityValues(): TaskEntityValues = TaskEntityValues(
     quadrant = quadrant.name,
     isCompleted = if (isCompleted) 1L else 0L,
     deadline = deadline?.toEpochMilliseconds(),
+    reminderMinutes = reminderMinutes?.toLong(),
     createdAt = createdAt.toEpochMilliseconds(),
     updatedAt = updatedAt.toEpochMilliseconds()
 )

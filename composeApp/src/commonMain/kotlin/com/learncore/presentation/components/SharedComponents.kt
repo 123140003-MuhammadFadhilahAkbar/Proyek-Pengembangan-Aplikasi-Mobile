@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import kotlinx.datetime.toLocalDateTime
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material3.Card
@@ -253,6 +254,48 @@ fun TaskCard(
                                 overflow = TextOverflow.Ellipsis
                             )
                         }
+                    }
+                }
+            }
+
+            // ── Baris 4: Deadline (jika ada) ────────────────────────────
+            if (task.deadline != null) {
+                val deadlineMillis = task.deadline.toEpochMilliseconds()
+                val isOverdue = deadlineMillis < System.currentTimeMillis() && !task.isCompleted
+                val dt = task.deadline.toLocalDateTime(kotlinx.datetime.TimeZone.currentSystemDefault())
+                val deadlineText = "%02d/%02d/%d %02d:%02d".format(
+                    dt.dayOfMonth, dt.monthNumber, dt.year, dt.hour, dt.minute
+                )
+                val reminderText = task.reminderMinutes?.let { min ->
+                    val label = when {
+                        min < 60 -> "$min menit sebelum"
+                        min < 1440 -> "${min / 60} jam sebelum"
+                        else -> "${min / 1440} hari sebelum"
+                    }
+                    " · 🔔 $label"
+                } ?: ""
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(
+                                if (isOverdue) MaterialTheme.colorScheme.errorContainer
+                                else MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
+                            )
+                            .padding(horizontal = 7.dp, vertical = 3.dp)
+                    ) {
+                        Text(
+                            text = "⏰ $deadlineText$reminderText",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isOverdue) MaterialTheme.colorScheme.onErrorContainer
+                            else MaterialTheme.colorScheme.onPrimaryContainer,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
