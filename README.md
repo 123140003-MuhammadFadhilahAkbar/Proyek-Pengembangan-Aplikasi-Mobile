@@ -236,7 +236,7 @@ Setiap tugas dikategorikan ke dalam salah satu dari 4 kuadran:
 | Q4 | Tidak Mendesak & Tidak Penting | **Eliminate** — pertimbangkan ulang | Abu-abu |
 
 ---
-[![Demo NutriScan](https://img.shields.io/badge/▶%20Demo%20Video-Google%20Drive-blue?style=for-the-badge&logo=google-drive)](https://drive.google.com/file/d/1ZY6BZayiyKNVR1UrXkQ-NpWz8HLjwJTA/view?usp=drivesdk)
+[![Demo NutriScan](https://img.shields.io/badge/▶%20Demo%20Video-Google%20Drive-blue?style=for-the-badge&logo=google-drive)](https://drive.google.com/file/d/1Vc_qWWPHpyjCvS1nyDdA-xWi98r38v3r/view?usp=drive_link)
 ---
 ## 📄 Lisensi
 
