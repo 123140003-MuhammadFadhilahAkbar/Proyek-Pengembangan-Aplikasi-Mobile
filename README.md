@@ -30,33 +30,37 @@ Aplikasi mobile multiplatform (Android-first) yang membantu mahasiswa dan pelaja
 ---
 
 ## 👥 Tim
-
+ 
 <table>
   <tr>
     <th>Foto</th>
     <th>Nama</th>
     <th>NIM</th>
     <th>Role</th>
+    <th>GitHub</th>
   </tr>
   <tr>
     <td align="center"><img src="https://github.com/user-attachments/assets/6c3d81c5-1885-450b-9839-9d9fc984e17d" width="60" height="60" style="border-radius:50%" alt="Fadhilah"/></td>
     <td>Muhammad Fadhilah Akbar</td>
     <td>123140003</td>
     <td>Lead & Android Dev</td>
+    <td align="center"><a href="https://github.com/123140003-MuhammadFadhilahAkbar">@BaarzJo</a></td>
   </tr>
   <tr>
     <td align="center"><img src="https://github.com/user-attachments/assets/41cd27f7-aeff-4f1e-9aa1-5e79f3e55557" width="60" height="60" style="border-radius:50%" alt="Sigit"/></td>
     <td>Sigit Kurnia Hartawan</td>
     <td>123140033</td>
     <td>FE Dev & QA</td>
+    <td align="center"><a href="https://github.com/SigitKurnia05">@Mr. git</a></td>
   </tr>
 </table>
 
 **Mata Kuliah:** IF25-22017 Pengembangan Aplikasi Mobile
-
+ 
 **Dosen:** Pak Habib ([@mh4Scripts](https://github.com/mh4Scripts))
-
+ 
 **Institut:** Institut Teknologi Sumatera (ITERA)
+
 
 ---
 
