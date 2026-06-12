@@ -1,5 +1,11 @@
-# 📚  LearnCore - Aplikasi untuk fokus pembelajaran
+# 📚 LearnCore - Aplikasi untuk fokus pembelajaran
+
 ![CI](https://github.com/123140003-MuhammadFadhilahAkbar/Proyek-Pengembangan-Aplikasi-Mobile/actions/workflows/ci.yml/badge.svg)
+![Android](https://img.shields.io/badge/Android-3DDC84?style=flat&logo=android&logoColor=white)
+![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=flat&logo=kotlin&logoColor=white)
+![Compose Multiplatform](https://img.shields.io/badge/Compose%20Multiplatform-4285F4?style=flat&logo=jetpackcompose&logoColor=white)
+
+---
 
 ## 📱 Deskripsi Aplikasi
 
@@ -14,11 +20,37 @@ LearnCore membantu pengguna memprioritaskan pekerjaan dan belajar secara lebih e
 Aplikasi mobile multiplatform (Android-first) yang membantu mahasiswa dan pelajar untuk **mengelola tugas secara cerdas** menggunakan **Matriks Eisenhower**, dilengkapi dengan **Pomodoro Timer**, **AI Learning Assistant**, dan analisis produktivitas berbasis data lokal.
 
 ---
+
+## 🎬 Demo Aplikasi
+
+[![Demo LearnCore](https://img.youtube.com/vi/a_slLEvTmy4/maxresdefault.jpg)](https://youtu.be/a_slLEvTmy4?si=LT1NuH7F5IQcbZ3I)
+
+> 🔼 *Klik gambar di atas untuk menonton demonstrasi lengkap aplikasi LearnCore di YouTube.*
+
+---
+
 ## 👥 Tim
-| Nama | NIM | Role |
-|------|-----|------|
-| Muhammad Fadhilah Akbar | 123140003 | Lead & Android Dev |
-| Sigit Kurnia Hartawan | 123140033 | FE Dev & QA |
+
+<table>
+  <tr>
+    <th>Foto</th>
+    <th>Nama</th>
+    <th>NIM</th>
+    <th>Role</th>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://github.com/123140003-MuhammadFadhilahAkbar.png" width="60" height="60" style="border-radius:50%" alt="Fadhilah"/></td>
+    <td>Muhammad Fadhilah Akbar</td>
+    <td>123140003</td>
+    <td>Lead & Android Dev</td>
+  </tr>
+  <tr>
+    <td align="center"><img src="https://github.com/123140033.png" width="60" height="60" style="border-radius:50%" alt="Sigit"/></td>
+    <td>Sigit Kurnia Hartawan</td>
+    <td>123140033</td>
+    <td>FE Dev & QA</td>
+  </tr>
+</table>
 
 **Mata Kuliah:** IF25-22017 Pengembangan Aplikasi Mobile
 
@@ -73,6 +105,20 @@ UI chat interaktif mirip aplikasi messaging. Chip suggestion untuk prompt cepat:
 
 ---
 
+## 📸 Preview Tampilan Aplikasi
+
+| Dashboard | Task List | Pomodoro |
+|:---------:|:---------:|:--------:|
+| <img src="https://github.com/user-attachments/assets/536ec5fc-59f0-4227-8e37-18f8cf2d1ba4" width="180"/> | <img src="https://github.com/user-attachments/assets/12715f94-6909-480a-b09a-c24b40dbc08d" width="180"/> | <img src="https://github.com/user-attachments/assets/aa3db5df-cb67-4f1b-b452-0dcbf41094a8" width="180"/> |
+| Eisenhower Matrix interaktif | CRUD tugas & filter kuadran | Timer fokus circular |
+
+| Profile & Settings | AI Learning Assistant |
+|:-----------------:|:---------------------:|
+| <img src="https://github.com/user-attachments/assets/977c108a-8ca8-4430-aa14-5cf9101d8a02" width="180"/> | <img src="https://github.com/user-attachments/assets/6ce3d79f-0e3c-40cd-ba29-f1f24a9a9466" width="180"/> |
+| Kustomisasi & Dark Mode | Chat dengan Gemini AI |
+
+---
+
 ## 🏗️ Arsitektur
 
 Menggunakan **Clean Architecture + MVVM** sesuai panduan mata kuliah.
@@ -94,49 +140,119 @@ Menggunakan **Clean Architecture + MVVM** sesuai panduan mata kuliah.
 │                DATA LAYER                       │
 │   Repository Impl                               │
 │   ├── Remote: Ktor + Gemini API (AI)            │
-│   └── Local:  Room Database (tasks, stats)      │
+│   └── Local:  SQLDelight Database (tasks, stats)│
 └─────────────────────────────────────────────────┘
 ```
+
 ### Struktur Folder
 
 ```
-composeApp/src/commonMain/kotlin/com/learncore/
-├── core/
-│   ├── di/
-│   │   └── AppModule.kt
-│   ├── network/
-│   │   ├── ApiConfig.kt
-│   │   └── HttpClientFactory.kt
-│   └── util/
-│       └── Extension.kt
-├── data/
-│   ├── local/
-│   │   ├── dao/               # Room DAOs (TaskDao, PomodoroStatsDao)
-│   │   ├── entity/            # DB entities (Task, PomodoroSession)
-│   │   └── datastore/         # Preferences (theme, Pomodoro duration)
-│   ├── remote/
-│   │   ├── api/               # GeminiService
-│   │   └── dto/               # Response DTOs
-│   └── repository/            # Repository implementations
-├── domain/
-│   ├── model/                 # Task, EisenhowerQuadrant, ProductivityStats
-│   ├── repository/            # Repository interfaces
-│   └── usecase/               # GetTasksUseCase, AnalyzeProductivityUseCase
-└── presentation/
-    ├── navigation/             # NavHost, Routes
-    ├── theme/                  # Material3 Colors, Typography, Dark Mode
-    ├── components/             # Reusable composables (QuadrantDot, PomodoroCircle, ChatBubble)
-    └── screens/
-        ├── dashboard/          # Eisenhower Matrix + stats overview
-        ├── tasks/              # Task list, CRUD, detail page
-        ├── pomodoro/           # Timer screen
-        ├── profile/            # User profile & settings
-        └── ai/                 # AI Learning Assistant chat
+composeApp/src/
+├── androidMain/kotlin/com/learncore/
+│   ├── android/
+│   │   ├── LearnCoreApplication.kt
+│   │   └── MainActivity.kt
+│   ├── core/
+│   │   ├── di/AndroidModule.kt
+│   │   ├── network/
+│   │   │   ├── ApiConfig.android.kt
+│   │   │   └── NetworkMonitorImpl.kt
+│   │   ├── notification/
+│   │   │   ├── DeadlineNotificationReceiver.kt
+│   │   │   ├── DeadlineSchedulerImpl.kt
+│   │   │   └── PomodoroNotifierImpl.kt
+│   │   └── util/DatabaseDriverFactory.android.kt
+│   ├── data/local/datastore/DataStoreFactory.android.kt
+│   └── presentation/screens/
+│       ├── profile/ProfilePhotoSection.android.kt
+│       └── tasks/PlatformDateTimePicker.android.kt
+│
+├── commonMain/kotlin/com/learncore/
+│   ├── App.kt
+│   ├── core/
+│   │   ├── di/AppModule.kt
+│   │   ├── network/
+│   │   │   ├── ApiConfig.kt
+│   │   │   ├── HttpClientFactory.kt
+│   │   │   └── NetworkMonitor.kt
+│   │   ├── notification/
+│   │   │   ├── DeadlineScheduler.kt
+│   │   │   └── PomodoroNotifier.kt
+│   │   └── util/DatabaseDriverFactory.kt
+│   ├── data/
+│   │   ├── local/
+│   │   │   ├── datastore/
+│   │   │   │   ├── DataStoreFactory.kt
+│   │   │   │   └── UserPreferences.kt
+│   │   │   └── entity/TaskMapper.kt
+│   │   ├── remote/
+│   │   │   ├── api/GeminiService.kt
+│   │   │   └── dto/GeminiDto.kt
+│   │   └── repository/
+│   │       ├── AIRepositoryImpl.kt
+│   │       └── TaskRepositoryImpl.kt
+│   ├── domain/
+│   │   ├── model/Task.kt
+│   │   ├── repository/Repositories.kt
+│   │   └── usecase/TaskUseCases.kt
+│   ├── presentation/
+│   │   ├── components/SharedComponents.kt
+│   │   ├── navigation/
+│   │   │   ├── AppNavHost.kt
+│   │   │   └── Routes.kt
+│   │   ├── screens/
+│   │   │   ├── ai/
+│   │   │   │   ├── AIAssistantScreen.kt
+│   │   │   │   └── AIAssistantViewModel.kt
+│   │   │   ├── dashboard/
+│   │   │   │   ├── DashboardScreen.kt
+│   │   │   │   └── DashboardViewModel.kt
+│   │   │   ├── pomodoro/
+│   │   │   │   ├── PomodoroScreen.kt
+│   │   │   │   └── PomodoroViewModel.kt
+│   │   │   ├── profile/
+│   │   │   │   ├── AccountEditScreen.kt
+│   │   │   │   ├── HelpSupportScreen.kt
+│   │   │   │   ├── ProfilePhotoSection.kt
+│   │   │   │   ├── ProfileScreen.kt
+│   │   │   │   └── ProfileViewModel.kt
+│   │   │   └── tasks/
+│   │   │       ├── AddEditTaskScreen.kt
+│   │   │       ├── AddEditTaskViewModel.kt
+│   │   │       ├── PlatformDateTimePicker.kt
+│   │   │       ├── TaskDetailScreen.kt
+│   │   │       ├── TaskDetailViewModel.kt
+│   │   │       ├── TaskListScreen.kt
+│   │   │       └── TaskListViewModel.kt
+│   │   └── theme/Theme.kt
+│   └── sqldelight/com/learncore/data/local/
+│       ├── LearnCore.sq
+│       └── migrations/
+│           ├── 1.sqm
+│           └── 2.sqm
+│
+├── commonTest/kotlin/com/learncore/
+│   ├── domain/model/
+│   │   ├── ProductivityStatsTest.kt
+│   │   └── TaskModelTest.kt
+│   ├── domain/usecase/TaskUseCasesTest.kt
+│   └── presentation/
+│       ├── AddEditTaskViewModelTest.kt
+│       ├── DashboardViewModelTest.kt
+│       ├── PomodoroViewModelTest.kt
+│       ├── TaskDetailViewModelTest.kt
+│       └── TaskListViewModelTest.kt
+│
+└── androidTest/kotlin/com/learncore/
+    └── TaskCardUiTest.kt
 ```
 
 ---
 
 ## 🛠️ Tech Stack
+
+<details>
+<summary><b>Lihat daftar teknologi lengkap</b></summary>
 
 | Komponen | Teknologi |
 |----------|-----------|
@@ -145,12 +261,14 @@ composeApp/src/commonMain/kotlin/com/learncore/
 | **Async** | Coroutines, Flow, StateFlow |
 | **Networking** | Ktor Client + Kotlinx Serialization |
 | **AI** | Google Gemini API (`gemini-2.5-flash`) |
-| **Local Storage** | Room Database (tasks, Pomodoro sessions, stats) |
+| **Local Storage** | SQLDelight (tasks, Pomodoro sessions, stats) |
 | **Preferences** | DataStore (tema, durasi timer, onboarding flag) |
 | **DI** | Koin |
 | **Notifications** | WorkManager (deadline reminders) |
 | **Testing** | kotlin.test, MockK, Turbine, Compose Test |
 | **CI/CD** | GitHub Actions |
+
+</details>
 
 ---
 
@@ -236,8 +354,7 @@ Setiap tugas dikategorikan ke dalam salah satu dari 4 kuadran:
 | Q4 | Tidak Mendesak & Tidak Penting | **Eliminate** — pertimbangkan ulang | Abu-abu |
 
 ---
-[![Demo NutriScan](https://img.shields.io/badge/▶%20Demo%20Video-Google%20Drive-blue?style=for-the-badge&logo=google-drive)](https://drive.google.com/file/d/1Vc_qWWPHpyjCvS1nyDdA-xWi98r38v3r/view?usp=drive_link)
----
+
 ## 📄 Lisensi
 
 MIT License — dibuat untuk keperluan pembelajaran Pengembangan Aplikasi Mobile ITERA.
