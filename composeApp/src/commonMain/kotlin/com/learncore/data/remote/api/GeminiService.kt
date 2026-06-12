@@ -11,8 +11,10 @@ import io.ktor.client.call.body
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
+import io.ktor.http.isSuccess
 
 class GeminiService(private val client: HttpClient) {
 
@@ -58,25 +60,47 @@ class GeminiService(private val client: HttpClient) {
             contents = contents,
             generationConfig = GenerationConfig(
                 temperature = 0.7,
-                maxOutputTokens = 1024
+                maxOutputTokens = 8192
             )
         )
 
-        val response: GeminiResponse = client.post("$BASE_URL/models/$MODEL:generateContent") {
+        val httpResponse = client.post("$BASE_URL/models/$MODEL:generateContent") {
             contentType(ContentType.Application.Json)
             parameter("key", apiKey)
             setBody(request)
-        }.body()
+        }
 
-        // Check for API-level error first
+        // Tangkap HTTP error sebelum parse JSON
+        if (!httpResponse.status.isSuccess()) {
+            val statusCode = httpResponse.status.value
+            val rawBody = runCatching { httpResponse.bodyAsText() }.getOrDefault("")
+            throw Exception("Gemini API error ($statusCode): $rawBody")
+        }
+
+        val response: GeminiResponse = httpResponse.body()
+
+        // Cek error dari body JSON
         if (response.error != null) {
             val code = response.error.code ?: 0
             val msg = response.error.message ?: "Unknown API error"
             throw Exception("Gemini API error ($code): $msg")
         }
 
-        response.candidates?.firstOrNull()
-            ?.content?.parts?.firstOrNull()?.text?.takeIf { it.isNotBlank() }
-            ?: throw Exception("Empty response from AI")
+        val candidate = response.candidates?.firstOrNull()
+
+        // Jika finish reason MAX_TOKENS, tetap kembalikan teks yang ada (tidak throw)
+        val finishReason = candidate?.finishReason
+        val text = candidate?.content?.parts?.firstOrNull()?.text
+
+        if (!text.isNullOrBlank()) {
+            // Jika terpotong karena token, tambahkan keterangan
+            if (finishReason == "MAX_TOKENS") {
+                return@runCatching "$text\n\n_(Jawaban terpotong — coba tanyakan lebih spesifik)_"
+            }
+            return@runCatching text
+        }
+
+        // Jika benar-benar kosong
+        throw Exception("Empty response dari AI (finishReason: $finishReason)")
     }
 }

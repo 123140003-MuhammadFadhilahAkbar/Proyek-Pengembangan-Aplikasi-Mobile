@@ -45,7 +45,6 @@ fun AccountEditScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Tampilkan snackbar saat save selesai — TIDAK auto-navigate back
     LaunchedEffect(Unit) {
         viewModel.profileSaved.collect {
             snackbarHostState.showSnackbar("✓ Profil berhasil diperbarui!")
@@ -64,12 +63,12 @@ fun AccountEditScreen(
         },
         topBar = {
             TopAppBar(
-                title = { Text("Edit Account", fontWeight = FontWeight.Bold) },
+                title = { Text("Edit Akun", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Kembali"
                         )
                     }
                 }
@@ -85,7 +84,6 @@ fun AccountEditScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Avatar dengan tombol ganti foto
             ProfilePhotoSection(
                 photoUri = uiState.userPhotoUri,
                 userName = uiState.userName,
@@ -97,8 +95,8 @@ fun AccountEditScreen(
             OutlinedTextField(
                 value = uiState.userName,
                 onValueChange = viewModel::onUserNameChange,
-                label = { Text("Full Name") },
-                placeholder = { Text("e.g. Alex Johnson") },
+                label = { Text("Nama Lengkap") },
+                placeholder = { Text("cth. Budi Santoso") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp)
@@ -108,7 +106,7 @@ fun AccountEditScreen(
                 value = uiState.userEmail,
                 onValueChange = viewModel::onUserEmailChange,
                 label = { Text("Email") },
-                placeholder = { Text("e.g. alex@example.com") },
+                placeholder = { Text("cth. budi@email.com") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp)
@@ -117,8 +115,8 @@ fun AccountEditScreen(
             OutlinedTextField(
                 value = uiState.userStatus,
                 onValueChange = viewModel::onUserStatusChange,
-                label = { Text("Status / Role") },
-                placeholder = { Text("e.g. Student, Developer") },
+                label = { Text("Status / Peran") },
+                placeholder = { Text("cth. Mahasiswa, Pengembang") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp)
@@ -128,7 +126,7 @@ fun AccountEditScreen(
                 value = uiState.userBio,
                 onValueChange = viewModel::onUserBioChange,
                 label = { Text("Bio") },
-                placeholder = { Text("Write something about yourself...") },
+                placeholder = { Text("Tulis sesuatu tentang dirimu...") },
                 modifier = Modifier.fillMaxWidth(),
                 minLines = 3,
                 maxLines = 5,
@@ -146,7 +144,7 @@ fun AccountEditScreen(
                 )
             ) {
                 Text(
-                    text = "Save Changes",
+                    text = "Simpan Perubahan",
                     modifier = Modifier.padding(vertical = 4.dp),
                     fontWeight = FontWeight.SemiBold
                 )

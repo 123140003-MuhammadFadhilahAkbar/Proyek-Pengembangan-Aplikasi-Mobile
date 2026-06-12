@@ -6,7 +6,8 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class GeminiRequest(
     val contents: List<GeminiContent>,
-    @SerialName("generationConfig") val generationConfig: GenerationConfig? = null
+    @SerialName("generationConfig") val generationConfig: GenerationConfig? = null,
+    @SerialName("system_instruction") val systemInstruction: GeminiContent? = null
 )
 
 @Serializable
@@ -23,7 +24,7 @@ data class GeminiPart(
 @Serializable
 data class GenerationConfig(
     val temperature: Double = 0.7,
-    val maxOutputTokens: Int = 1024
+    @SerialName("maxOutputTokens") val maxOutputTokens: Int = 2400
 )
 
 @Serializable
