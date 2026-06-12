@@ -39,13 +39,13 @@ Aplikasi mobile multiplatform (Android-first) yang membantu mahasiswa dan pelaja
     <th>Role</th>
   </tr>
   <tr>
-    <td align="center"><img src="https://github.com/123140003-MuhammadFadhilahAkbar.png" width="60" height="60" style="border-radius:50%" alt="Fadhilah"/></td>
+    <td align="center"><img src="https://github.com/user-attachments/assets/6c3d81c5-1885-450b-9839-9d9fc984e17d" width="60" height="60" style="border-radius:50%" alt="Fadhilah"/></td>
     <td>Muhammad Fadhilah Akbar</td>
     <td>123140003</td>
     <td>Lead & Android Dev</td>
   </tr>
   <tr>
-    <td align="center"><img src="https://github.com/123140033.png" width="60" height="60" style="border-radius:50%" alt="Sigit"/></td>
+    <td align="center"><img src="https://github.com/user-attachments/assets/41cd27f7-aeff-4f1e-9aa1-5e79f3e55557" width="60" height="60" style="border-radius:50%" alt="Sigit"/></td>
     <td>Sigit Kurnia Hartawan</td>
     <td>123140033</td>
     <td>FE Dev & QA</td>
