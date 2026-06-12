@@ -114,7 +114,7 @@ UI chat interaktif mirip aplikasi messaging. Chip suggestion untuk prompt cepat:
 
 | Profile & Settings | AI Learning Assistant |
 |:-----------------:|:---------------------:|
-| <img src="https://github.com/user-attachments/assets/977c108a-8ca8-4430-aa14-5cf9101d8a02" width="180"/> | <img src="https://github.com/user-attachments/assets/6ce3d79f-0e3c-40cd-ba29-f1f24a9a9466" width="180"/> |
+| <img src="https://github.com/user-attachments/assets/977c108a-8ca8-4430-aa14-5cf9101d8a02" width="180"/> | <img src="https://github.com/user-attachments/assets/58d94618-fc87-4f8a-8341-e276698dc34b" width="180"/> |
 | Kustomisasi & Dark Mode | Chat dengan Gemini AI |
 
 ---
@@ -274,6 +274,9 @@ composeApp/src/
 
 ## 🗂️ Sprint Plan
 
+<details>
+<summary><b>Lihat jadwal sprint lengkap</b></summary>
+
 | Sprint | Minggu | Target | PIC |
 |--------|--------|--------|-----|
 | **Sprint 1** | W11 | Planning, repo setup, CI/CD, README | Seluruh Anggota |
@@ -285,6 +288,8 @@ composeApp/src/
 | **Sprint 4** | W14 | Unit tests & UI tests, bug fixes | Anggota 2 |
 | **Sprint 5** | W15 | Final fixes, dokumentasi, demo prep | Seluruh Anggota |
 | **UAS** | W16 | Demo Day 🎉 | Seluruh Anggota |
+
+</details>
 
 ---
 
