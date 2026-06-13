@@ -38,21 +38,14 @@ val QUICK_PROMPTS = listOf(
 )
 
 private val LEARNCORE_SYSTEM_PROMPT = """
-    Kamu adalah LearnCore AI, asisten produktivitas cerdas yang terintegrasi dalam aplikasi LearnCore.
+    Kamu adalah LearnCore AI, asisten produktivitas dalam aplikasi LearnCore.
     
-    Spesialisasi:
-    - Matriks Eisenhower dan prioritisasi tugas
-    - Teknik Pomodoro dan manajemen waktu
-    - Strategi belajar efektif untuk pelajar dan mahasiswa
-    - Mengatasi prokrastinasi dan meningkatkan fokus
-    - Analisis produktivitas personal
-    
-    Rules:
-    - Gunakan Bahasa Indonesia yang profesional namun ramah
-    - Jawab dengan sesingkat dan seringkas
-    - Berikan respons yang konkret, actionable, dan terstruktur
-    - Maksimal 250 kata per respons kecuali diminta lebih panjang
-    - Fokus pada solusi praktis yang bisa langsung diterapkan
+    Aturan WAJIB:
+    - Jawab SINGKAT dan PADAT — maksimal 5 poin atau 100 kata
+    - Langsung ke inti, tanpa basa-basi atau pembukaan panjang
+    - Tidak perlu ucapan seperti "Tentu!", "Baik!", "Halo!" — langsung jawab
+    - Gunakan poin pendek, bukan paragraf panjang
+    - Bahasa Indonesia, profesional tapi ringkas
 """.trimIndent()
 
 class AIAssistantViewModel(
@@ -89,7 +82,7 @@ class AIAssistantViewModel(
             if (!isOnline) {
                 val offlineMsg = ChatMessage(
                     id = nextMessageId(),
-                    text = "Tidak ada koneksi internet. Fitur AI membutuhkan internet.",
+                    text = "📡 Tidak ada koneksi internet.",
                     isUser = false
                 )
                 _uiState.value = _uiState.value.copy(
@@ -101,7 +94,10 @@ class AIAssistantViewModel(
 
             val isProductivityRequest = text.contains("produktivit", ignoreCase = true) ||
                     text.contains("analisa", ignoreCase = true) ||
-                    text.contains("statistik", ignoreCase = true)
+                    text.contains("analisis", ignoreCase = true) ||
+                    text.contains("statistik", ignoreCase = true) ||
+                    text.contains("tugas", ignoreCase = true) ||
+                    text.contains("prioritas", ignoreCase = true)
 
             val result = runCatching {
                 if (isProductivityRequest) {
@@ -116,17 +112,23 @@ class AIAssistantViewModel(
                 text = result.fold(
                     onSuccess = { it },
                     onFailure = { e ->
+                        val msg = e.message ?: ""
                         when {
-                            e.message?.contains("401") == true ||
-                                    e.message?.contains("API key") == true ->
-                                "API key Gemini tidak valid atau belum dikonfigurasi. Tambahkan GEMINI_API_KEY di local.properties."
-                            e.message?.contains("Empty response") == true ->
-                                "AI tidak memberikan respons. Coba ulangi pertanyaanmu."
-                            e.message?.contains("UnresolvedAddressException") == true ||
-                                    e.message?.contains("ConnectException") == true ->
-                                "Tidak ada koneksi internet. Periksa koneksimu dan coba lagi."
+                            msg.contains("503") || msg.contains("high demand") || msg.contains("overloaded") ->
+                                "⏳ Server sibuk, coba lagi sebentar."
+                            msg.contains("429") || msg.contains("quota") || msg.contains("rate limit") ->
+                                "⏱️ Batas permintaan tercapai, tunggu sebentar."
+                            msg.contains("500") ->
+                                "🔧 Server gangguan, coba lagi nanti."
+                            msg.contains("401") || msg.contains("API key") ->
+                                "🔑 API key tidak valid. Periksa GEMINI_API_KEY di local.properties."
+                            msg.contains("timeout") || msg.contains("Timeout") || msg.contains("SocketTimeout") ||
+                                    msg.contains("ConnectException") || msg.contains("UnresolvedAddressException") ->
+                                "📡 Koneksi timeout. Pastikan internet stabil lalu coba lagi."
+                            msg.contains("Empty response") ->
+                                "🤔 AI tidak merespons. Coba ulangi."
                             else ->
-                                "Terjadi kesalahan: ${e.message ?: "Unknown error"}. Coba lagi."
+                                "❌ Gagal: $msg"
                         }
                     }
                 ),

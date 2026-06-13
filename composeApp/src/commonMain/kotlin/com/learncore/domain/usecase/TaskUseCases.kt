@@ -6,6 +6,10 @@ import com.learncore.domain.model.Task
 import com.learncore.domain.repository.AIRepository
 import com.learncore.domain.repository.TaskRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 
 class GetAllTasksUseCase(private val repository: TaskRepository) {
     operator fun invoke(): Flow<List<Task>> = repository.getAllTasks()
@@ -55,27 +59,53 @@ class RecordPomodoroSessionUseCase(private val repository: TaskRepository) {
 
 class AnalyzeProductivityUseCase(
     private val aiRepository: AIRepository,
+    private val taskRepository: TaskRepository,
     private val statsUseCase: GetProductivityStatsUseCase
 ) {
     suspend operator fun invoke(customPrompt: String? = null): Result<String> {
         val stats = statsUseCase()
-        val statsContext = buildString {
-            appendLine("Data Produktivitas Pengguna:")
-            appendLine("- Total tugas: ${stats.totalTasks}")
-            appendLine("- Tugas selesai: ${stats.completedTasks}")
-            appendLine("- Tingkat penyelesaian: ${"%.0f".format(stats.completionRate * 100)}%")
-            appendLine("- Total fokus: ${stats.totalFocusMinutes} menit")
-            appendLine("- Sesi Pomodoro: ${stats.pomodoroSessions}")
-            appendLine("- Distribusi kuadran:")
+        val allTasks = taskRepository.getAllTasks().first()
+        val activeTasks = allTasks.filter { !it.isCompleted }
+        val completedTasks = allTasks.filter { it.isCompleted }
+        val now = Clock.System.now()
+        val tz = TimeZone.currentSystemDefault()
+        val overdueTasks = activeTasks.filter { it.deadline != null && it.deadline < now }
+        val urgentTasks = activeTasks.filter { it.quadrant == EisenhowerQuadrant.DO_FIRST }
+
+        val taskContext = buildString {
+            appendLine("Data tugas pengguna:")
+            appendLine("- Selesai: ${stats.completedTasks}/${stats.totalTasks} (${"%.0f".format(stats.completionRate * 100)}%)")
+            appendLine("- Aktif: ${activeTasks.size} | Terlambat: ${overdueTasks.size}")
+            appendLine("- Fokus: ${stats.totalFocusMinutes} menit | Pomodoro: ${stats.pomodoroSessions} sesi")
+            appendLine()
+            appendLine("Kuadran aktif:")
             EisenhowerQuadrant.entries.forEach { q ->
-                appendLine("  ${q.displayName}: ${stats.tasksByQuadrant[q] ?: 0} tugas")
+                val count = activeTasks.count { it.quadrant == q }
+                if (count > 0) appendLine("- ${q.displayName}: $count tugas")
+            }
+            if (urgentTasks.isNotEmpty()) {
+                appendLine()
+                appendLine("Do First:")
+                urgentTasks.take(3).forEach { task ->
+                    val dl = task.deadline?.toLocalDateTime(tz)?.let {
+                        "${it.dayOfMonth}/${it.monthNumber}"
+                    } ?: "no deadline"
+                    appendLine("- ${task.title} ($dl)")
+                }
+            }
+            if (overdueTasks.isNotEmpty()) {
+                appendLine()
+                appendLine("Terlambat:")
+                overdueTasks.take(3).forEach { task ->
+                    appendLine("- ${task.title}")
+                }
             }
         }
 
         val prompt = if (customPrompt != null) {
-            "$statsContext\n\nPermintaan: $customPrompt"
+            "$taskContext\nPermintaan: $customPrompt"
         } else {
-            "$statsContext\n\nBerikan analisis produktivitas dan saran peningkatan berdasarkan data di atas."
+            "$taskContext\nBerikan analisis singkat dan 1 saran terpenting."
         }
 
         return aiRepository.generateResponse(prompt, PRODUCTIVITY_SYSTEM_PROMPT)
@@ -83,15 +113,14 @@ class AnalyzeProductivityUseCase(
 
     companion object {
         private val PRODUCTIVITY_SYSTEM_PROMPT = """
-            Kamu adalah asisten produktivitas cerdas yang membantu pelajar dan profesional.
-            Spesialisasi: analisis Matriks Eisenhower, manajemen waktu, dan sesi Pomodoro.
+            Kamu adalah LearnCore AI, asisten produktivitas ringkas.
             
-            Rules:
-            - Gunakan Bahasa Indonesia yang profesional namun ramah
-            - Berikan analisis berdasarkan data statistik yang diberikan
-            - Sertakan saran konkret dan actionable
-            - Format respons dengan poin-poin yang jelas
-            - Maksimal 300 kata
+            Aturan WAJIB:
+            - Jawab SINGKAT — maksimal 5 poin atau 80 kata
+            - Langsung ke inti tanpa pembukaan
+            - Sebut nama tugas spesifik jika relevan
+            - Gunakan poin pendek dengan emoji
+            - Akhiri dengan 1 aksi konkret hari ini
         """.trimIndent()
     }
 }

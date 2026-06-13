@@ -160,23 +160,78 @@ kover {
     reports {
         filters {
             excludes {
+                packages(
+                    // Infrastructure - tidak bisa ditest tanpa platform
+                    "com.learncore.core.di",
+                    "com.learncore.core.util",
+                    "com.learncore.core.notification",
+                    "com.learncore.core.network",
+
+                    // Android entry point
+                    "com.learncore.android",
+
+                    // SQLDelight generated & remote
+                    "com.learncore.data.remote.api",
+                    "com.learncore.data.remote.dto",
+                    "com.learncore.data.repository",
+
+                    // DataStore factory (platform-specific)
+                    // UserPreferences tetap masuk
+
+                    // Compose navigation & theme (tidak ada logic)
+                    "com.learncore.presentation.navigation",
+                    "com.learncore.presentation.theme",
+
+                    // Generated resources
+                    "learncore.composeapp.generated.resources"
+                )
                 classes(
-                    "*.BuildConfig",
-                    "*.*_Factory*",
-                    "*.*Module*",
-                    "com.learncore.android.*",
-                    "com.learncore.data.local.composeApp.*",
+                    // Android/iOS entry points
+                    "com.learncore.MainKt",
+                    "com.learncore.AppKt",
+                    "com.learncore.App",
+
+                    // SQLDelight generated classes di data.local
+                    "com.learncore.data.local.LearnCore*",
                     "com.learncore.data.local.Get*",
                     "com.learncore.data.local.Count*",
-                    "com.learncore.data.local.LearnCore*",
+                    "com.learncore.data.local.Insert*",
+                    "com.learncore.data.local.Update*",
+                    "com.learncore.data.local.Delete*",
                     "com.learncore.data.local.TaskEntity",
-                    "com.learncore.data.local.PomodoroSession*"
+                    "com.learncore.data.local.TaskEntity$*",
+                    "com.learncore.data.local.PomodoroSession*",
+                    "com.learncore.data.local.LearnCoreDatabase*",
+                    "com.learncore.data.local.datastore.DataStoreFactory*",
+
+                    // Compose Screen files (top-level @Composable = *Kt class)
+                    "com.learncore.presentation.screens.ai.AIAssistantScreenKt*",
+                    "com.learncore.presentation.screens.tasks.AddEditTaskScreenKt*",
+                    "com.learncore.presentation.screens.tasks.TaskListScreenKt*",
+                    "com.learncore.presentation.screens.tasks.TaskDetailScreenKt*",
+                    "com.learncore.presentation.screens.tasks.PlatformDateTimePicker*",
+                    "com.learncore.presentation.screens.profile.ProfileScreenKt*",
+                    "com.learncore.presentation.screens.profile.HelpSupportScreenKt*",
+                    "com.learncore.presentation.screens.profile.AccountEditScreenKt*",
+                    "com.learncore.presentation.screens.profile.ProfilePhotoSection*",
+                    "com.learncore.presentation.screens.dashboard.DashboardScreenKt*",
+                    "com.learncore.presentation.screens.pomodoro.PomodoroScreenKt*",
+                    "com.learncore.presentation.components.SharedComponentsKt*",
+
+                    // Compose lambda singletons (auto-generated)
+                    "com.learncore.presentation.screens.*.*ComposableSingletons*",
+                    "*ComposableSingletons*",
+
+                    // Koin / DI
+                    "*.*_Factory*",
+                    "*.*Module*",
+                    "*.BuildConfig"
                 )
             }
         }
         verify {
             rule {
-                minBound(50)
+                minBound(70)
             }
         }
     }

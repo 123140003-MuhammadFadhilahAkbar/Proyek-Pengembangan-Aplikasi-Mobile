@@ -4,10 +4,8 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -42,7 +40,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 
@@ -54,8 +51,8 @@ private val FAQ_ITEMS = listOf(
         "Matriks Eisenhower adalah kerangka kerja produktivitas yang mengategorikan tugas ke dalam 4 kuadran berdasarkan urgensi dan tingkat kepentingan: Lakukan Pertama (mendesak & penting), Jadwalkan (penting tapi tidak mendesak), Delegasikan (mendesak tapi tidak penting), dan Eliminasi (tidak mendesak maupun penting)."
     ),
     FaqItem(
-        "Bagaimana cara kerja pengatur waktu Pomodoro?",
-        "Teknik Pomodoro membagi pekerjaan ke dalam interval fokus (bawaan 25 menit) yang dipisahkan oleh istirahat singkat (bawaan 5 menit). Selesaikan satu sesi, ambil istirahat, lalu ulangi. Anda dapat menyesuaikan durasi ini di Profil → Preferensi Pomodoro."
+        "Bagaimana cara kerja Pengatur Waktu Pomodoro?",
+        "Teknik Pomodoro membagi pekerjaan ke dalam sesi fokus (bawaan 25 menit) yang dipisahkan oleh istirahat singkat (bawaan 5 menit). Selesaikan satu sesi, ambil istirahat, lalu ulangi. Anda dapat menyesuaikan durasi ini di Profil → Preferensi Pomodoro."
     ),
     FaqItem(
         "Apakah data saya dicadangkan ke cloud?",
@@ -68,6 +65,14 @@ private val FAQ_ITEMS = listOf(
     FaqItem(
         "Apakah saya bisa menghapus tugas secara permanen?",
         "Ya. Buka layar detail tugas dan gunakan opsi hapus. Tugas yang dihapus akan langsung dihapus saat itu juga dan tidak dapat dipulihkan."
+    ),
+    FaqItem(
+        "Bagaimana cara mengubah durasi sesi Pomodoro?",
+        "Buka halaman Profil, lalu pilih Preferensi Pomodoro. Di sana Anda dapat mengatur durasi sesi kerja, durasi istirahat pendek, dan durasi istirahat panjang sesuai kebutuhan Anda."
+    ),
+    FaqItem(
+        "Apa perbedaan tiap kuadran Eisenhower?",
+        "Kuadran 1 (Lakukan Pertama): tugas mendesak & penting, selesaikan segera. Kuadran 2 (Jadwalkan): penting tapi tidak mendesak, rencanakan waktunya. Kuadran 3 (Delegasikan): mendesak tapi tidak penting, bisa diserahkan ke orang lain. Kuadran 4 (Eliminasi): tidak mendesak & tidak penting, pertimbangkan untuk dihapus."
     )
 )
 
@@ -79,12 +84,12 @@ fun HelpSupportScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Help & Support", fontWeight = FontWeight.Bold) },
+                title = { Text("Bantuan & Dukungan", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Kembali"
                         )
                     }
                 }
@@ -99,7 +104,7 @@ fun HelpSupportScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // App version banner
+            // Banner versi aplikasi
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
@@ -127,7 +132,7 @@ fun HelpSupportScreen(
                             color = MaterialTheme.colorScheme.onPrimaryContainer
                         )
                         Text(
-                            text = "Version 1.0.0 • Built with Kotlin Multiplatform",
+                            text = "Versi 1.0.0 • Dibangun dengan Kotlin Multiplatform",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.75f)
                         )
@@ -135,8 +140,8 @@ fun HelpSupportScreen(
                 }
             }
 
-            // FAQ section label
-            SectionLabel("Frequently Asked Questions")
+            // Label seksi FAQ
+            SectionLabel("Pertanyaan yang Sering Diajukan")
 
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -157,17 +162,20 @@ fun HelpSupportScreen(
                 }
             }
 
-            // About section
-            SectionLabel("About")
+            // Seksi tentang aplikasi
+            SectionLabel("Tentang Aplikasi")
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 elevation = CardDefaults.cardElevation(0.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     Text(
-                        text = "LearnCore is a productivity app combining the Eisenhower Matrix and Pomodoro technique to help you focus on what truly matters.",
+                        text = "LearnCore adalah aplikasi produktivitas yang menggabungkan Matriks Eisenhower dan teknik Pomodoro untuk membantu Anda fokus pada hal yang benar-benar penting.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

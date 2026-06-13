@@ -10,6 +10,8 @@
     <application
         android:name=".LearnCoreApplication"
         android:allowBackup="true"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:label="LearnCore"
         android:theme="@style/Theme.LearnCore"
         android:supportsRtl="true">
